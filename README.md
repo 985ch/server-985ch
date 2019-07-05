@@ -1,2 +1,33 @@
 # server-985ch
-个人服务器，没有特定方向，想往里加啥功能就加啥功能
+
+
+
+## QuickStart
+
+<!-- add docs here for user -->
+
+see [egg docs][egg] for more detail.
+
+### Development
+
+```bash
+$ npm i
+$ npm run dev
+$ open http://localhost:7001/
+```
+
+### Deploy
+
+```bash
+$ npm start
+$ npm stop
+```
+
+### npm scripts
+
+- Use `npm run lint` to check code style.
+- Use `npm test` to run unit test.
+- Use `npm run autod` to auto detect dependencies upgrade, see [autod](https://www.npmjs.com/package/autod) for more detail.
+
+
+[egg]: https://eggjs.org
