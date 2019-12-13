@@ -4,11 +4,16 @@
   "description": "",
   "private": true,
   "egg": {
+    "framework": "egg-sachikawa",
     "declarations": true
   },
   "dependencies": {
+    "base64zip": "^1.0.0",
     "egg": "^2.15.1",
-    "egg-scripts": "^2.11.0"
+    "egg-sachikawa": "^1.1.2",
+    "egg-scripts": "^2.11.0",
+    "egg-view-ejs": "^2.0.0",
+    "mysql2": "^2.0.1"
   },
   "devDependencies": {
     "autod": "^3.0.1",
@@ -16,6 +21,7 @@
     "egg-bin": "^4.11.0",
     "egg-ci": "^1.11.0",
     "egg-mock": "^3.21.0",
+    "egg-sequelize-mg": "^1.0.2",
     "eslint": "^5.13.0",
     "eslint-config-egg": "^7.1.0"
   },
@@ -23,7 +29,7 @@
     "node": ">=10.0.0"
   },
   "scripts": {
-    "start": "egg-scripts start --daemon --title=egg-server-server-985ch",
+    "start": "egg-scripts start --title=egg-server-server-985ch",
     "stop": "egg-scripts stop --title=egg-server-server-985ch",
     "dev": "egg-bin dev",
     "debug": "egg-bin debug",
@@ -32,7 +38,8 @@
     "cov": "egg-bin cov",
     "lint": "eslint .",
     "ci": "npm run lint && npm run cov",
-    "autod": "autod"
+    "autod": "autod",
+    "gen-models": "node ./toolkit/gen-models"
   },
   "ci": {
     "version": "10"
