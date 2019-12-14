@@ -14,3 +14,4 @@ typings/
 .nyc_output/
 app/public
 app/view/index.html
+pm2.json
