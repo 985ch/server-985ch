@@ -1,6 +1,7 @@
 /* eslint valid-jsdoc: "off" */
-
 'use strict';
+
+const { env } = require('egg-sachikawa').Utils;
 
 /**
  * @param {Egg.EggAppInfo} appInfo app info
@@ -44,6 +45,9 @@ module.exports = appInfo => {
 
   // add your user config here
   const userConfig = {
+    qqbot: {
+      host: env('QQBOT_API_URL'),
+    },
   };
 
   return {
