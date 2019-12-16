@@ -1,6 +1,10 @@
 // QQ机器人核心组件
 'use strict';
 
+const plugins = [
+  'base',
+];
+
 module.exports = app => {
   class MyService extends app.Service {
     // 响应事件并处理
@@ -18,9 +22,23 @@ module.exports = app => {
       }
       return {};
     }
+    // 响应心跳事件
+    async onBeat() {
+      const bot = this.service.botplugin;
+      for (const plugin of plugins) {
+        await bot[plugin].onBeat();
+      }
+    }
     // 响应消息事件
-    async onMessage(/* raw*/) {
-      // TODO：在这里响应消息并返回
+    async onMessage(raw) {
+      // 解析命令并获取个人和群组信息
+      const msgInfo = await this.service.qqbot.msg.getInfo(raw);
+      // 逐个模块处理信息，直到其中一个返回
+      const bot = this.service.botplugin;
+      for (const plugin of plugins) {
+        const result = await bot[plugin].onMessage(msgInfo);
+        if (result) return result;
+      }
       return {};
     }
     // 响应请求事件
