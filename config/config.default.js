@@ -47,6 +47,7 @@ module.exports = appInfo => {
   const userConfig = {
     qqbot: {
       host: env('QQBOT_API_URL'),
+      ip: env('QQBOT_API_IP'),
     },
   };
 

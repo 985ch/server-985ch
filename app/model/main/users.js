@@ -17,7 +17,13 @@ module.exports = app => {
   });
   // -------- end sequelize-mg replace --------
 
-  utils.extendModel(model);
+  utils.extendModel(model, [ 'id', 'qq', 'nickname', 'rights', 'config' ], [{
+    list: [ 'rights' ],
+    filter: raw => (raw ? raw.split(',') : []),
+  }, {
+    list: [ 'config' ],
+    filter: raw => utils.pJson(raw, null),
+  }]);
   model.associate = function() {
   };
 
