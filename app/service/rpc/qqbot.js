@@ -35,6 +35,17 @@ module.exports = app => {
         dataType: 'json',
       });
     }
+    // 获取群信息
+    async getGroupInfo(group_id) {
+      return await this.request('get_group_info', {
+        method: 'GET',
+        dataType: 'json',
+        data: {
+          group_id,
+          no_cache: true,
+        },
+      });
+    }
     // 发送群消息
     async sendGroupMsg(group_id, message) {
       return await this.request('send_group_msg', {

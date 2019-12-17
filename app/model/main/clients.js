@@ -1,5 +1,6 @@
 'use strict';
 
+const _ = require('lodash');
 const utils = require('egg-sachikawa').Utils;
 
 module.exports = app => {
@@ -18,12 +19,8 @@ module.exports = app => {
     {
       list: [ 'ips' ], // 解析为正则表达式
       filter: raw => {
-        const regs = [];
         const list = raw.split(',');
-        for (const itm of list) {
-          regs.push(new RegExp(itm.replace(/\*/g, '\\d+')));
-        }
-        return regs;
+        return _.map(list, str => new RegExp(str.replace(/\*/g, '\\d+')));
       },
     },
     {

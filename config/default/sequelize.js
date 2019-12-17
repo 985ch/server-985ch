@@ -25,6 +25,11 @@ module.exports = {
       database: 'main',
     }),
     _.extend({}, cfg, {
+      delegate: 'qqDB',
+      baseDir: 'model/qq',
+      database: 'qq',
+    }),
+    _.extend({}, cfg, {
       delegate: 'resDB',
       baseDir: 'model/resources',
       database: 'resources',

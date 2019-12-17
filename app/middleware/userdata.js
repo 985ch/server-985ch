@@ -9,13 +9,13 @@
 module.exports = options => {
   return async function(ctx, next) {
     const errCode = ctx.app.errCode;
-    const cache = ctx.service.user.cache;
+    const user = ctx.service.user;
     const { permission } = options;
     const token = ctx.get('Token');
     if (permission && !token) return ctx.fail('缺少登陆信息', errCode.INVAILD_TOKEN);
-    const data = await cache.get(token);
+    const data = await user.cache.getByToken(token);
     if (permission && data.userid === -1) return ctx.fail('无效的登陆信息', errCode.INVAILD_TOKEN);
-    if (!cache.checkPermission(data, permission)) {
+    if (!user.data.checkPermission(data.roles, permission)) {
       return ctx.fail('没有访问权限', errCode.INVAILD_PERMISSIONS);
     }
     ctx.state.userdata = data;

@@ -2,6 +2,7 @@
 
 'use strict';
 
+const _ = require('lodash');
 const { randString } = require('egg-sachikawa').Utils;
 
 const timeout = 5 * 60;
@@ -20,29 +21,36 @@ module.exports = app => {
         }
       }
       // 生成新的登陆码
-      const code = `${qq}#${randString()}`;
-      await redis.setex(`login:${code}`, timeout, qq);
+      const code = randString(6, '0123456789');
+      await redis.setex(`login:${qq}#${code}`, timeout, qq);
+      return code;
     }
     // 用户登陆
     async login(code) {
-      const qq = await redis.get(`login:${code}`);
+      const key = `login:${code}`;
+      const qq = await redis.get(key);
       if (!qq) return null;
-      const data = await this.service.user.cache.add(qq);
-      return data.token;
+      await redis.del(key);
+      return await this.service.user.cache.newToken(qq);
     }
     // 设置用户权限
     async setRoles(qq, roles) {
       await db.Users.update({ rights: JSON.stringify(roles) }, { where: { qq } });
-      const cache = this.service.user.cache;
-      const token = await cache.getToken(qq);
-      if (token) await cache.update(token);
+      this.service.user.cache.update(qq);
     }
     // 设置用户配置
-    async setConfig(key, value) {
-      const { token, userid, config } = this.ctx.state.userdata;
+    async setConfig(qq, config, key, value) {
       config[key] = value;
-      await db.Users.update({ config: JSON.stringify(config) }, { where: { id: userid } });
-      await this.service.user.cache.update(token);
+      await db.Users.update({ config: JSON.stringify(config) }, { where: { qq } });
+      await this.service.user.cache.update(qq);
+    }
+    // 检查权限
+    checkPermission(roles, permission) {
+      permission = _.castArray(permission);
+      for (const cur of permission) {
+        if (roles.indexOf(cur) >= 0) return true;
+      }
+      return false;
     }
   }
   return MyService;
