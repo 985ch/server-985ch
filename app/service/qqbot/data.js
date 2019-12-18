@@ -14,7 +14,7 @@ module.exports = app => {
       return {
         user,
         group,
-        isPrivate: group.id !== 0,
+        isPrivate: group.id === 0,
         plugins: message_type === 'group' ? group.plugins : plugins,
         cmd,
       };

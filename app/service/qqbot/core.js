@@ -50,7 +50,6 @@ module.exports = app => {
         data: raw,
       });
       if (res.status === 200) {
-        console.log(res.data);
         return JSON.parse(res.data);
       }
       return {};
