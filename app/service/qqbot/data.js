@@ -7,9 +7,6 @@ module.exports = app => {
     // 解析消息，获取命令，用户和群信息并返回
     async messageInfo(raw) {
       const { message_type, user_id, raw_message, group_id, anonymous, sender } = raw;
-      const self = this.ctx.get('X-Self-ID');
-      if (user_id === self) return null; // 不处理自己发送的消息
-
       const user = await this.getUserData(user_id, group_id, anonymous, sender);
       const group = await this.service.qqbot.group.getData(group_id);
       const cmd = this.getCmd(raw_message);
@@ -17,6 +14,7 @@ module.exports = app => {
       return {
         user,
         group,
+        isPrivate: group.id !== 0,
         plugins: message_type === 'group' ? group.plugins : plugins,
         cmd,
       };
@@ -55,7 +53,6 @@ module.exports = app => {
         config: user.config,
       };
     }
-
     // 解析命令行
     getCmd(text) {
       if (text.indexOf('-') !== 0) {
@@ -66,10 +63,21 @@ module.exports = app => {
       if (nEnter < n && nEnter >= 0) {
         n = nEnter;
       }
+      let params = null;
+      const cmd = this.service.qqbot.cmd;
       return {
         cmd: text.substring(1, n > 0 ? n : undefined),
-        rawParams: n >= 0 ? text.substring(n + 1) : '',
+        get params() {
+          if (params) return params;
+          params = cmd.readParams(text, n);
+          return params;
+        },
       };
+    }
+    // 保存历史记录
+    async saveHistory() {
+      // TODO:实现历史记录
+      return [];
     }
   }
   return MyService;

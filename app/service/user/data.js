@@ -3,7 +3,6 @@
 'use strict';
 
 const _ = require('lodash');
-const { randString } = require('egg-sachikawa').Utils;
 
 const timeout = 5 * 60;
 
@@ -21,7 +20,7 @@ module.exports = app => {
         }
       }
       // 生成新的登陆码
-      const code = randString(6, '0123456789');
+      const code = this.ctx.helper.randString(6, '0123456789');
       await redis.setex(`login:${qq}#${code}`, timeout, qq);
       return code;
     }

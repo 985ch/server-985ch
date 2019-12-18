@@ -2,8 +2,6 @@
 
 'use strict';
 
-const { randString } = require('egg-sachikawa').Utils;
-
 const curVersion = 0;
 const expireTime = 3600 * 24 * 7;
 
@@ -43,7 +41,7 @@ module.exports = app => {
     }
     // 添加token供用户使用
     async newToken(qq) {
-      const token = `${qq}#${randString(24)}`;
+      const token = `${qq}#${this.ctx.helper.randString(24)}`;
       // 清除旧的验证信息
       const keys = await redis.keys(`g:${qq}#*`);
       if (keys.length > 0) {

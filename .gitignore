@@ -14,4 +14,6 @@ typings/
 .nyc_output/
 app/public
 app/view/index.html
+app/http/get/test.js
+app/http/post/test.js
 pm2.json
