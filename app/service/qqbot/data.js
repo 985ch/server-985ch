@@ -34,7 +34,7 @@ module.exports = app => {
           config: {},
         };
       }
-      const user = await this.service.user.data.getByBot(qq);
+      const user = await this.service.user.cache.getByQQ(qq);
       const nick = await group.getNick(qq, groupid);
       const isAdmin = role === 'admin';
       const isOwner = role === 'owner';

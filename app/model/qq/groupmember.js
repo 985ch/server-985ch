@@ -1,6 +1,7 @@
 'use strict';
 
 const utils = require('egg-sachikawa').Utils;
+const { ungzip } = require('base64zip');
 
 module.exports = app => {
   const DataTypes = app.Sequelize;
@@ -16,7 +17,10 @@ module.exports = app => {
   });
   // -------- end sequelize-mg replace --------
 
-  utils.extendModel(model);
+  utils.extendModel(model, [ 'groupid', 'qq', 'nick', 'active' ], [{
+    list: [ 'nickinfo' ],
+    filter: raw => (raw ? ungzip(raw, { parse: true }) : null),
+  }]);
   model.associate = function() {
   };
 
