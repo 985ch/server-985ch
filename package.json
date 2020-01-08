@@ -10,7 +10,7 @@
   "dependencies": {
     "base64zip": "^1.0.0",
     "egg": "^2.15.1",
-    "egg-sachikawa": "^1.1.3",
+    "egg-sachikawa": "^1.1.4",
     "egg-scripts": "^2.11.0",
     "egg-view-ejs": "^2.0.0",
     "mysql2": "^2.0.1"
