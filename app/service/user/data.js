@@ -45,6 +45,7 @@ module.exports = app => {
     }
     // 检查权限
     checkPermission(roles, permission) {
+      if (permission === true) return true;
       permission = _.castArray(permission);
       for (const cur of permission) {
         if (roles.indexOf(cur) >= 0) return true;

@@ -71,7 +71,7 @@ module.exports = app => {
         return {
           userid: user.id,
           qq: user.qq,
-          nick: user.nick,
+          nick: user.nickname,
           roles: user.rights,
           config: user.config,
           v: curVersion,

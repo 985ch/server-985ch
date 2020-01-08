@@ -4,6 +4,7 @@
 const _ = require('lodash');
 
 const defaultPlugins = [ 'base' ].join(',');
+const historyLimit = 50;
 
 module.exports = app => {
   const cache = app.cache9.get('main');
@@ -112,6 +113,26 @@ module.exports = app => {
         if (members.indexOf(qq))result.push(groupid);
       }
       return result;
+    }
+    // 修改群配置信息
+    async setConfig(groupid, config) {
+      await db.Groups.update({
+        config: JSON.stringify(config),
+      }, {
+        where: { id: groupid },
+      });
+      await memory.clear(`g-data:${groupid}`);
+    }
+    // 保存群历史记录
+    async saveHistory(groupid, userid, msgid, msg) {
+      const key = `g-history${groupid}`;
+      const history = (await cache.getCache(key)) || [];
+      if (history.length >= historyLimit) {
+        history.pop();
+      }
+      history.unshift({ msgid, userid, msg, t: Date.now() });
+      await cache.setCache(key, history, { ttl: 24 * 3600 });
+      return history;
     }
   }
   return MyService;

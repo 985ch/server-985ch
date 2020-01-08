@@ -30,12 +30,13 @@ module.exports = app => {
     async onMessage(raw) {
       // 存储历史记录
       const history = await this.service.qqbot.data.saveHistory(raw);
-      raw.history = history;
       // 不处理自己发送的消息
       const self = this.ctx.get('X-Self-ID');
       if (raw.user_id === self) return {};
       // 解析命令并获取个人和群组信息
       const msgInfo = await this.service.qqbot.data.messageInfo(raw);
+      msgInfo.selfid = self;
+      msgInfo.history = history;
       // 逐个模块处理信息，直到其中一个返回
       const bot = this.service.botplugin;
       for (const plugin of msgInfo.plugins) {

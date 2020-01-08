@@ -48,7 +48,10 @@ module.exports = appInfo => {
     qqbot: {
       host: env('QQBOT_API_URL'),
       ip: env('QQBOT_API_IP'),
-      plugins: [ 'base' ],
+      plugins: [
+        'base',
+        'responderCmd', 'responderReply',
+      ],
     },
     webUrl: env('QQBOT_WEB_URL'),
   };
