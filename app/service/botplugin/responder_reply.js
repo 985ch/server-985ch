@@ -2,7 +2,12 @@
 'use strict';
 
 const maxRepeatLength = 100;
-const defaultResponds = [];
+const defaultResponds = [
+  '原来如此，我明白了',
+  '好的，记下来了',
+  '好像有点道理',
+  '确实',
+];
 
 module.exports = app => {
   const db = app.qqDB;
