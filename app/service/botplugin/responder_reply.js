@@ -23,11 +23,11 @@ module.exports = app => {
       if (repeatCount > 0) { // 跟风复读
         const chance = 1 - 3 / ((repeatCount + 1) * (repeatCount + 1));
         if (Math.random() < chance) {
-          return { reply: message };
+          return { reply: message, at_sender: false };
         }
       } else if (repeater.chance > 0 && Math.random() < repeater.chance) { // 随机应答
         if (this.checkRepeat(message) && Math.random() < repeater.repeat) {
-          return { reply: message };
+          return { reply: message, at_sender: false };
         }
         return await this.randomReply(group.id);
       }
@@ -92,7 +92,10 @@ module.exports = app => {
       if (list.length <= 0) {
         list = defaultResponds;
       }
-      return list[Math.floor(Math.random() * list.length)];
+      return {
+        reply: list[Math.floor(Math.random() * list.length)],
+        at_sender: false,
+      };
     }
   }
   return MyService;
