@@ -7,6 +7,7 @@ const defaultResponds = [
   '好的，记下来了',
   '好像有点道理',
   '确实',
+  '对啊，我也是这么想的',
 ];
 
 module.exports = app => {

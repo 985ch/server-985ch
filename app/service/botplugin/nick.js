@@ -7,12 +7,12 @@ const askTesters = [
     getData(s, qq) { return { qq }; },
   },
   {
-    regular: /\[CQ:at,qq=[\d]+\]是谁/,
-    getData(s) { return { qq: s.substring(10, s.length - 3) }; },
+    regular: /\[CQ:at,qq=[\d]+\] 是谁/,
+    getData(s) { return { qq: s.substring(10, s.length - 4) }; },
   },
   {
     regular: /谁是\[CQ:at,qq=[\d]+\]/,
-    getData(s) { return { qq: s.substring(12, s.length - 1) }; },
+    getData(s) { return { qq: s.substring(12, s.length - 2) }; },
   },
   {
     regular: /[\S]+是谁/,
@@ -26,12 +26,12 @@ const askTesters = [
 // 记忆命令模板
 const rememberTesters = [
   {
-    regular: /\[CQ:at,qq=[\d]+\]是[\S]+/,
+    regular: /\[CQ:at,qq=[\d]+\] 是[\S]+/,
     getData(s) {
       const n = s.indexOf(']', 10);
       return {
         qq: s.substring(10, n),
-        nick: s.substring(n + 2),
+        nick: s.substring(n + 3),
       };
     },
   },
@@ -51,14 +51,15 @@ module.exports = app => {
   class MyService extends app.Service {
     // 处理消息
     async onMessage({ cmd, user, isPrivate, group }, { raw_message }) {
+
       if (isPrivate || cmd.cmd) return null;
       // 判断是否询问群友
-      const member = this.check(raw_message, askTesters);
+      const member = this.check(user.qq, raw_message, askTesters);
       if (member) {
         return await this.replyWho(group.id, user.qq, member);
       }
       // 判断是否标记群友
-      const data = this.check(raw_message, rememberTesters);
+      const data = this.check(user.qq, raw_message, rememberTesters);
       if (member) {
         return await this.remember(user.qq, group.id, data.qq, data.nick);
       }
@@ -69,23 +70,23 @@ module.exports = app => {
       return null;
     }
     // 检查并在检查成功时返回数据
-    check(raw, list) {
+    check(qq, raw, list) {
       for (const cur of list) {
         if (cur.regular.test(raw)) {
-          return cur.getData(raw);
+          return cur.getData(raw, qq);
         }
       }
       return null;
     }
     // 回答成员
     async replyWho(groupid, self, member) {
-      let { card, qq, text } = this.getMember(groupid, member);
-      if (!qq) return { reply: `未查到群友:${text}，请确认该群友是否存在并已被标记`, at_sender: false };
+      let { card, qq, text } = await this.getMember(groupid, member);
+      if (!qq) return { reply: `对啊，${text}到底是谁呢？`, at_sender: false };
 
       // 统计用户的昵称标记
       const names = {};
       let selfname = null;
-      const list = await db.simpleFind({ groupid, qq });
+      const list = await db.Groupnick.simpleFind({ groupid, qq });
       for (const cur of list) {
         const nick = cur.nick;
         if (names[nick]) {
@@ -102,7 +103,11 @@ module.exports = app => {
         card = '你';
         target = '你';
       }
-      let reply = `${card} 就是 ${text}`;
+
+      if (!text) {
+        text = this.service.qqbot.group.getNick(qq, groupid);
+      }
+      let reply = `${card}就是${text}`;
       if (selfname === text) {
         reply += `，${target}如此自称`;
         if (names[text] > 1) {
@@ -110,16 +115,19 @@ module.exports = app => {
         }
       } else if (names[text] > 0) {
         reply += `共有${names[text]}个群友支持这个称号\n`;
+      } else {
+        reply += '\n';
       }
       if (selfname && selfname !== text) {
-        reply += `${target}自称 ${selfname}${names[selfname] > 1 ? `并得到${names[selfname] - 1}个网友的支持` : ''}\n`;
+        reply += `${target}自称${selfname}${names[selfname] > 1 ? `，并得到${names[selfname] - 1}个网友的支持` : ''}`;
       }
-      reply += '此外';
+      let plus = '\n此外';
       for (const name in names) {
         if (name !== selfname && name !== text) {
-          reply += `，有${names[name]}个群友称${self === qq ? '你' : '其'}为 ${name}`;
+          plus += `，还有${names[name]}个群友称${self === qq ? '你' : '其'}为${name}`;
         }
       }
+      if (plus.length > 3)reply += plus;
 
       return { reply, at_sender: false };
     }
@@ -129,15 +137,14 @@ module.exports = app => {
       let card = null;
       if (!qq) {
         const found = await this.service.qqbot.group.getMember(groupid, text);
-        if (!found) return {};
+        if (!found) return { card: text };
         qq = found.qq;
         card = found.card || found.nickname;
+        if (card === text) card = found.title || card; // 群名片为查找文本时优先返回头衔
       } else {
-        const members = await this.service.qqbot.group.getMembers(groupid);
+        const members = await this.service.qqbot.group.getGroupMembers(groupid);
         const member = members.qq[qq] || {};
         card = member.card || member.nickname || qq;
-        text = card;
-        if (card === text) card = member.title || card; // 群名片为查找文本时优先返回头衔
       }
       return { qq, text, card };
     }
@@ -150,7 +157,7 @@ module.exports = app => {
       }
       // 避免昵称重复
 
-      const found = await db.simpleFindOne({ groupid, nick, qq: { [db.Op.ne]: qq } }, [ 'qq' ]);
+      const found = await db.Groupnick.simpleFindOne({ groupid, nick, qq: { [db.Op.ne]: qq } }, [ 'qq' ]);
       if (found) {
         const card = await group.getCard(found.qq, groupid);
         return { reply: `称号 ${nick} 已被群友 ${card} 占用`, at_sender: false };

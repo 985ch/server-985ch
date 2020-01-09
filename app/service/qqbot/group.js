@@ -17,6 +17,10 @@ module.exports = app => {
       return await memory.get(`g-nick:${qq}:${groupid}`, async () => {
         const result = await db.Groupnick.findOne({
           attributes: [ 'nick', [ db.fn('SUM', db.col('score')), 'sum' ]],
+          where: {
+            groupid,
+            qq,
+          },
           group: 'nick',
           order: [[ db.fn('SUM', db.col('score')), 'desc' ]],
           raw: true,
@@ -118,6 +122,7 @@ module.exports = app => {
         const card = {};
         const title = {};
         for (const member of list) {
+          member.qq = member.user_id.toString();
           qq[member.user_id] = member;
           this.ctx.helper.pushToObj(nickname, [ member.nickname ], member.user_id);
           const showname = member.card || member.nickname;
@@ -126,7 +131,7 @@ module.exports = app => {
             this.ctx.helper.pushToObj(title, [ member.title ], member.user_id);
           }
         }
-        return { qq, card, title };
+        return { qq, card, nickname, title };
       }, { ttl: 1800, update });
     }
     // 获取群列表
