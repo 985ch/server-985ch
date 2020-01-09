@@ -14,10 +14,38 @@ module.exports = app => {
     // 获取群昵称
     async getNick(qq, groupid) {
       if (!groupid) return null;
-      const data = await cache.get(`g-nick:${qq}:${groupid}`, async () => {
-        return await db.Groupmember.simpleFindOne({ qq, groupid, active: 1 });
+      return await memory.get(`g-nick:${qq}:${groupid}`, async () => {
+        const result = await db.Groupnick.findOne({
+          attributes: [ 'nick', [ db.fn('SUM', db.col('score')), 'sum' ]],
+          group: 'nick',
+          order: [[ 'sum', 'desc' ]],
+          raw: true,
+        });
+        return result ? result.nick : null;
       }, { ttl: 600 });
-      return data ? data.nick : null;
+    }
+    // 获取群卡片
+    async getCard(qq, groupid) {
+      const members = await this.getGroupMembers(groupid);
+      const member = members.qq[qq] || {};
+
+      return member.card || member.nickname || qq;
+    }
+    // 获取群昵称或群卡片
+    async getNickOrCard(qq, groupid) {
+      const nick = await this.getNick(qq, groupid);
+      if (nick) return nick;
+      return await this.getCard(qq, groupid);
+    }
+    // 获取群成员信息
+    async getMember(groupid, nick) {
+      return await memory.get(`g-names:${groupid}:${nick}`, async () => {
+        const members = await this.getGroupMembers(groupid);
+        const found = await db.Groupnick.simpleFindOne({ groupid, nick }, [ 'qq' ]);
+        if (found) return members.qq[found.qq];
+        const qq = members.card[nick] || members.nickname[nick] || members.title[nick];
+        return qq ? members.qq[qq] : null;
+      }, { ttl: 60 });
     }
     // 获取群数据
     async getData(groupid) {
@@ -85,17 +113,21 @@ module.exports = app => {
     async getGroupMembers(groupid, update = false) {
       return await memory.get(`g-members:${groupid}`, async () => {
         const list = await this.service.rpc.qqbot.getGroupMemberList(groupid);
-        return _.map(list, 'user_id');
+        const qq = {};
+        const nickname = {};
+        const card = {};
+        const title = {};
+        for (const member of list) {
+          qq[member.user_id] = member;
+          this.ctx.helper.pushToObj(nickname, [ member.nickname ], member.user_id);
+          const showname = member.card || member.nickname;
+          this.ctx.helper.pushToObj(card, [ showname ], member.user_id);
+          if (member.title) {
+            this.ctx.helper.pushToObj(title, [ member.title ], member.user_id);
+          }
+        }
+        return { qq, card, title };
       }, { ttl: 1800, update });
-    }
-    // 检查用户是否属于某个群
-    async checkUserGroup(qq, groupid) {
-      let members = await this.getGroupMembers(groupid);
-      if (members.indexOf(qq) >= 0) {
-        return true;
-      }
-      members = await this.getGroupMembers(groupid, true);
-      return members.indexOf(qq) >= 0;
     }
     // 获取群列表
     async getGroupList() {
@@ -110,9 +142,18 @@ module.exports = app => {
       const result = [];
       for (const groupid of groups) {
         const members = await this.getGroupMembers(groupid);
-        if (members.indexOf(qq))result.push(groupid);
+        if (members.qq.indexOf(qq))result.push(groupid);
       }
       return result;
+    }
+    // 检查用户是否属于某个群
+    async checkUserGroup(qq, groupid) {
+      let members = await this.getGroupMembers(groupid);
+      if (members.qq.indexOf(qq) >= 0) {
+        return true;
+      }
+      members = await this.getGroupMembers(groupid, true);
+      return members.qq.indexOf(qq) >= 0;
     }
     // 修改群配置信息
     async setConfig(groupid, config) {
@@ -133,6 +174,12 @@ module.exports = app => {
       history.unshift({ msgid, userid, msg, t: Date.now() });
       await cache.setCache(key, history, { ttl: 24 * 3600 });
       return history;
+    }
+    // 设置群友昵称
+    async saveNick(addedUser, groupid, qq, nick) {
+      const score = addedUser === qq ? 3 : 1;
+      await db.Groupnick.upsert({ groupid, qq, nick, addedUser, score });
+      await memory.clear(`g-nick:${qq}:${groupid}`);
     }
   }
   return MyService;

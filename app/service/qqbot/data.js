@@ -35,9 +35,12 @@ module.exports = app => {
         };
       }
       const user = await this.service.user.cache.getByQQ(qq);
-      const nick = await group.getNick(qq, groupid);
+
+      let nick = await group.getNick(qq, groupid);
+      if (nick === null)nick = card || nickname;
       const isOwner = role === 'owner';
       const isAdmin = role === 'admin' || isOwner;
+
       if (groupid && !user.config.groupid) {
         user.config.groupid = groupid;
         await this.service.user.data.setConfig(qq, user.config, 'groupid', groupid);

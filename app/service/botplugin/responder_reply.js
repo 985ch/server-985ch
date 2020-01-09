@@ -88,12 +88,15 @@ module.exports = app => {
     }
     // 从语句库中随机返回一个
     async randomReply(groupid) {
-      let list = await db.Respond.simpleFind({ groupid }, [ 'text' ]);
+      const list = await db.Respond.simpleFind({ groupid }, [ 'text' ]);
       if (list.length <= 0) {
-        list = defaultResponds;
+        return {
+          reply: defaultResponds[Math.floor(Math.random() * list.length)],
+          at_sender: false,
+        };
       }
       return {
-        reply: list[Math.floor(Math.random() * list.length)],
+        reply: list[Math.floor(Math.random() * list.length)].text,
         at_sender: false,
       };
     }

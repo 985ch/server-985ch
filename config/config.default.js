@@ -50,6 +50,7 @@ module.exports = appInfo => {
       ip: env('QQBOT_API_IP'),
       plugins: [
         'base',
+        'nick',
         'responderCmd', 'responderReply',
       ],
     },
