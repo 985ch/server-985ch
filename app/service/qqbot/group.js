@@ -18,7 +18,7 @@ module.exports = app => {
         const result = await db.Groupnick.findOne({
           attributes: [ 'nick', [ db.fn('SUM', db.col('score')), 'sum' ]],
           group: 'nick',
-          order: [[ 'sum', 'desc' ]],
+          order: [[ db.fn('SUM', db.col('score')), 'desc' ]],
           raw: true,
         });
         return result ? result.nick : null;
