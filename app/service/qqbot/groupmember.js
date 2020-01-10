@@ -57,19 +57,19 @@ module.exports = app => {
     }
     // 获取群成员信息
     async find(groupid, nick, onlyOne = true) {
-      const { qq, card, nickname, title } = await this.service.qqbot.group.getGroupMembers(groupid);
+      const { card, nickname, title } = await this.service.qqbot.group.getGroupMembers(groupid);
       const foundMember = await memory.get(`gm-names:${groupid}:${nick}`, async () => {
         const found = await db.Groupnick.simpleFindOne({ groupid, nick }, [ 'qq' ]);
-        return found ? qq[found.qq] : null;
+        return found ? found.qq : null;
       }, { ttl: 300 });
-      if (foundMember) return foundMember;
+      if (foundMember && onlyOne) return foundMember;
 
       let all;
       if (onlyOne) {
         all = card[nick] || nickname[nick] || title[nick];
         return all[0];
       }
-      all = _.union(card[nick], nickname[nick], title[nick]);
+      all = _.union(foundMember ? [ foundMember ] : [], card[nick], nickname[nick], title[nick]);
       return all;
     }
     // 根据语境处理代词

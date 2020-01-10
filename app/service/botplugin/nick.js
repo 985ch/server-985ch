@@ -16,7 +16,7 @@ module.exports = app => {
         return await this.replyWho(group.id, selfid, user.qq, info);
       }
       // 判断是否标记群友
-      const data = this.checkRemember(selfid, group.id, raw_message, history);
+      const data = await this.checkRemember(selfid, group.id, raw_message, history);
       if (data) {
         return await this.remember(user.qq, group.id, data.qq, data.nick);
       }
@@ -28,8 +28,7 @@ module.exports = app => {
     }
     // 检查是否在提问
     async checkAsk(me, msg, history) {
-      const last = msg.length - 1;
-      if ('?？'.indexOf(msg[last]) < 0) return null;
+      const last = msg.length;
 
       let askType = 0;
       let who,
@@ -40,7 +39,7 @@ module.exports = app => {
         who = this.service.qqbot.groupmember.getPronous(me, nick, history);
         if (who) return who;
       }
-      if (_.endsWith(msg, '是谁', 3)) {
+      if (_.endsWith(msg, '是谁')) {
         askType = 2;
         nick = msg.substring(0, last - 2);
         who = this.service.qqbot.groupmember.getPronous(me, nick, history);
@@ -65,7 +64,7 @@ module.exports = app => {
         if (end > 10) {
           const temp = _.trim(msg.substring(end + 1));
           if (temp[0] === '是') {
-            return { qq: msg.substring(10, end - 1), nick: temp.substring(1) };
+            return { qq: msg.substring(10, end), nick: temp.substring(1) };
           }
         }
       }
@@ -138,10 +137,10 @@ module.exports = app => {
       if (claim && claim !== nick) {
         reply += `\n${pron}自称${claim}${names[claim] > 1 ? `，并得到${names[claim] - 1}个网友的认同` : ''}`;
       }
-      let plus = null;
+      let plus = '';
       for (const name in names) {
         if (name !== claim && name !== nick) {
-          plus += `${plus ? '，' : '\n此外'}还有${names[name]}个群友称${pron}为${name}`;
+          plus += `${plus.length > 0 ? '，' : '\n此外'}还有${names[name]}个群友称${pron}为${name}`;
         }
       }
       if (plus)reply += plus;
@@ -203,6 +202,7 @@ module.exports = app => {
       if ('!！?？.。'.indexOf(nick[nick.length - 1]) >= 0) {
         nick = nick.substring(0, nick.length - 1);
       }
+      nick = _.trim(nick);
       if (nick.length > 20) return { reply: '昵称太长，无法记录', at_sender: false };
       // 避免昵称重复
       const found = await db.Groupnick.simpleFindOne({ groupid, nick, qq: { [db.Sequelize.Op.ne]: qq } }, [ 'qq' ]);
