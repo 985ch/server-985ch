@@ -1,4 +1,4 @@
-// QQ机器人核心组件
+// QQ群数据管理组件
 'use strict';
 
 const _ = require('lodash');
@@ -11,46 +11,6 @@ module.exports = app => {
   const memory = app.cache9.get('mem');
   const db = app.qqDB;
   class MyService extends app.Service {
-    // 获取群昵称
-    async getNick(qq, groupid) {
-      if (!groupid) return null;
-      return await memory.get(`g-nick:${qq}:${groupid}`, async () => {
-        const result = await db.Groupnick.findOne({
-          attributes: [ 'nick', [ db.fn('SUM', db.col('score')), 'sum' ]],
-          where: {
-            groupid,
-            qq,
-          },
-          group: 'nick',
-          order: [[ db.fn('SUM', db.col('score')), 'desc' ]],
-          raw: true,
-        });
-        return result ? result.nick : null;
-      }, { ttl: 600 });
-    }
-    // 获取群卡片
-    async getCard(qq, groupid) {
-      const members = await this.getGroupMembers(groupid);
-      const member = members.qq[qq] || {};
-
-      return member.card || member.nickname || qq;
-    }
-    // 获取群昵称或群卡片
-    async getNickOrCard(qq, groupid) {
-      const nick = await this.getNick(qq, groupid);
-      if (nick) return nick;
-      return await this.getCard(qq, groupid);
-    }
-    // 获取群成员信息
-    async getMember(groupid, nick) {
-      return await memory.get(`g-names:${groupid}:${nick}`, async () => {
-        const members = await this.getGroupMembers(groupid);
-        const found = await db.Groupnick.simpleFindOne({ groupid, nick }, [ 'qq' ]);
-        if (found) return members.qq[found.qq];
-        const qq = members.card[nick] || members.nickname[nick] || members.title[nick];
-        return qq ? members.qq[qq] : null;
-      }, { ttl: 60 });
-    }
     // 获取群数据
     async getData(groupid) {
       if (!groupid) {
@@ -123,16 +83,21 @@ module.exports = app => {
         const title = {};
         for (const member of list) {
           member.qq = member.user_id.toString();
-          qq[member.user_id] = member;
-          this.ctx.helper.pushToObj(nickname, [ member.nickname ], member.user_id);
+          qq[member.qq] = member;
+          this.ctx.helper.pushToObj(nickname, [ member.nickname ], member.qq);
           const showname = member.card || member.nickname;
-          this.ctx.helper.pushToObj(card, [ showname ], member.user_id);
+          this.ctx.helper.pushToObj(card, [ showname ], member.qq);
           if (member.title) {
-            this.ctx.helper.pushToObj(title, [ member.title ], member.user_id);
+            this.ctx.helper.pushToObj(title, [ member.title ], member.qq);
           }
         }
         return { qq, card, nickname, title };
       }, { ttl: 1800, update });
+    }
+    // 获取群成员
+    async getGroupMember(groupid, qq) {
+      const members = await this.getGroupMembers(groupid);
+      return members.qq[qq];
     }
     // 获取群列表
     async getGroupList() {
@@ -176,15 +141,9 @@ module.exports = app => {
       if (history.length >= historyLimit) {
         history.pop();
       }
-      history.unshift({ msgid, userid, msg, t: Date.now() });
+      history.unshift({ msgid, userid: userid.toString(), msg, t: Date.now() });
       await cache.setCache(key, history, { ttl: 24 * 3600 });
       return history;
-    }
-    // 设置群友昵称
-    async saveNick(addedUser, groupid, qq, nick) {
-      const score = addedUser === qq ? 3 : 1;
-      await db.Groupnick.upsert({ groupid, qq, nick, addedUser, score });
-      await memory.clear(`g-nick:${qq}:${groupid}`);
     }
   }
   return MyService;

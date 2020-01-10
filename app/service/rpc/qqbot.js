@@ -48,11 +48,13 @@ module.exports = app => {
     }
     // 发送群消息
     async sendGroupMsg(group_id, message) {
+      message = this.transMessage(message);
+      await this.service.qqbot.group.saveHistory(group_id, this.ctx.get('X-Self-ID'), -1, message);
       return await this.request('send_group_msg', {
         method: 'POST',
         data: {
           group_id,
-          message: this.transMessage(message),
+          message,
         },
         dataType: 'json',
       });

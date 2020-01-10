@@ -21,7 +21,7 @@ module.exports = app => {
     }
     // 获取成员信息
     async getUserData(qq, groupid, anonymous, { nickname, card, role, level, title }) {
-      const group = this.service.qqbot.group;
+      const gm = this.service.qqbot.groupmember;
       if (anonymous) {
         return {
           qq: 0,
@@ -36,7 +36,7 @@ module.exports = app => {
       }
       const user = await this.service.user.cache.getByQQ(qq);
 
-      let nick = await group.getNick(qq, groupid);
+      let nick = await gm.getNick(qq, groupid);
       if (nick === null)nick = card || nickname;
       const isOwner = role === 'owner';
       const isAdmin = role === 'admin' || isOwner;
