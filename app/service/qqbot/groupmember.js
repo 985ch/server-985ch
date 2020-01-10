@@ -67,7 +67,7 @@ module.exports = app => {
       let all;
       if (onlyOne) {
         all = card[nick] || nickname[nick] || title[nick];
-        return all[0];
+        return all ? all[0] : null;
       }
       all = _.union(foundMember ? [ foundMember ] : [], card[nick], nickname[nick], title[nick]);
       return all;

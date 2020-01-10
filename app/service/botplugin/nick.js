@@ -65,7 +65,7 @@ module.exports = app => {
       // 假命令符
       const nickText = helper.cutStarts(msg, [ '-我是', '-我就是', '-你是', '-你就是' ]);
       if (nickText) {
-        const who = gm.getPronous(msg[2], history);
+        const who = gm.getPronous(msg[1], history);
         return { qq: who.qq, nick: _.trim(nickText) };
       }
 
@@ -73,7 +73,7 @@ module.exports = app => {
       const mainText = helper.cutStarts(msg, [ '记住，', '记好', '记好了，', '给我记住，', '记清楚了，' ]);
 
       if (mainText) {
-        const list = helper.split2(mainText, '就是');
+        const list = helper.split2(mainText, [ '是', '就是' ]);
         for (const cur of list) {
           if (cur[1] === '') continue;
           const qq = await gm.getMember(cur[0], groupid, history);
