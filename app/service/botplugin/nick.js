@@ -7,16 +7,16 @@ module.exports = app => {
   const db = app.qqDB;
   class MyService extends app.Service {
     // 处理消息
-    async onMessage({ cmd, selfid, user, isPrivate, history, group }, { raw_message }) {
+    async onMessage({ selfid, user, isPrivate, history, group }, { raw_message }) {
 
-      if (isPrivate || cmd.cmd) return null;
+      if (isPrivate) return null;
       // 判断是否询问群友
-      const info = await this.checkAsk(selfid, raw_message, history);
+      const info = await this.checkAsk(raw_message, history);
       if (info) {
         return await this.replyWho(group.id, selfid, user.qq, info);
       }
       // 判断是否标记群友
-      const data = await this.checkRemember(selfid, group.id, raw_message, history);
+      const data = await this.checkRemember(group.id, raw_message, history);
       if (data) {
         return await this.remember(user.qq, group.id, data.qq, data.nick);
       }
@@ -27,7 +27,7 @@ module.exports = app => {
       return null;
     }
     // 检查是否在提问
-    async checkAsk(me, msg, history) {
+    async checkAsk(msg, history) {
       const last = msg.length;
 
       let askType = 0;
@@ -36,28 +36,22 @@ module.exports = app => {
       if (_.startsWith(msg, '谁是')) {
         askType = 1;
         nick = msg.substring(2, last);
-        who = this.service.qqbot.groupmember.getPronous(me, nick, history);
+        who = this.service.qqbot.groupmember.getPronous(nick, history);
         if (who) return who;
       }
       if (_.endsWith(msg, '是谁')) {
         askType = 2;
         nick = msg.substring(0, last - 2);
-        who = this.service.qqbot.groupmember.getPronous(me, nick, history);
+        who = this.service.qqbot.groupmember.getPronous(nick, history);
         if (who) return who;
       }
       return (askType > 0) ? { nick } : null;
     }
     // 检查是否在标记
-    async checkRemember(me, groupid, msg, history) {
+    async checkRemember(groupid, msg, history) {
       const helper = this.ctx.helper;
       const gm = this.service.qqbot.groupmember;
 
-      // 以特殊代词开头
-      const nickText = helper.cutStarts(msg, [ '-我是', '-我就是', '-你是', '-你就是' ]);
-      if (nickText) {
-        const who = gm.getPronous(msg[2], history);
-        return { qq: who.qq, nick: _.trim(nickText) };
-      }
       // 以at开头
       if (_.startsWith(msg, '[CQ:at,qq=')) {
         const end = msg.indexOf(']', 10);
@@ -68,10 +62,18 @@ module.exports = app => {
           }
         }
       }
+      // 假命令符
+      const nickText = helper.cutStarts(msg, [ '-我是', '-我就是', '-你是', '-你就是' ]);
+      if (nickText) {
+        const who = gm.getPronous(msg[2], history);
+        return { qq: who.qq, nick: _.trim(nickText) };
+      }
+
       // 以特殊标记开头
-      const mainText = helper.cutStarts(msg, [ '记住，', '记好了，', '给我记住，', '记清楚了，' ]);
+      const mainText = helper.cutStarts(msg, [ '记住，', '记好', '记好了，', '给我记住，', '记清楚了，' ]);
+
       if (mainText) {
-        const list = helper.split2('就是');
+        const list = helper.split2(mainText, '就是');
         for (const cur of list) {
           if (cur[1] === '') continue;
           const qq = await gm.getMember(cur[0], groupid, history);

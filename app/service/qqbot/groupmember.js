@@ -8,12 +8,12 @@ module.exports = app => {
   const db = app.qqDB;
   class MyService extends app.Service {
     // 获取代词
-    getPronous(me, raw, history) {
+    getPronous(raw, history) {
       if (raw === '我') {
         return { qq: history[0].userid, raw };
       }
       if ((raw === '你') && history.length > 1) {
-        if (history.length < 2) return { qq: me, raw };
+        if (history.length < 2) return { qq: this.ctx.get('X-Self-ID'), raw };
         return { qq: history[1].userid, raw };
       }
       const temp = _.trim(raw);
