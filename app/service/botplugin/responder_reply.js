@@ -92,7 +92,7 @@ module.exports = app => {
       const list = await db.Respond.simpleFind({ groupid }, [ 'text' ]);
       if (list.length <= 0) {
         return {
-          reply: defaultResponds[Math.floor(Math.random() * list.length)],
+          reply: defaultResponds[Math.floor(Math.random() * defaultResponds.length)],
           at_sender: false,
         };
       }
