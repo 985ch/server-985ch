@@ -23,12 +23,15 @@ function cutEnds(text, list) {
   return null;
 }
 // 截断，并采用两分法
-function split2(text, flag) {
-  const list = text.split(flag);
-  if (list.length < 2) return [];
+function split2(text, flags) {
   const results = [];
-  for (let i = 1; i < list.length; i++) {
-    results.push([ _.slice(list, 0, i), _.slice(list, i) ]);
+  for (const flag of flags) {
+    const list = text.split(flag);
+    if (list.length < 2) continue;
+
+    for (let i = 1; i < list.length; i++) {
+      results.push([ _.slice(list, 0, i).join(flag), _.slice(list, i).join(flag) ]);
+    }
   }
   return results;
 }
