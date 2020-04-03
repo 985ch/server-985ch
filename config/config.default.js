@@ -2,6 +2,8 @@
 'use strict';
 
 const { env } = require('egg-sachikawa').Utils;
+const fs = require('fs');
+const path = require('path');
 
 /**
  * @param {Egg.EggAppInfo} appInfo app info
@@ -23,6 +25,12 @@ module.exports = appInfo => {
     domainWhiteList: [ 'localhost:9527' ], // 允许跨域的白名单,为false时不限制跨域
   };
 
+  // 配置favicon图标
+  config.siteFile = {
+    '/favicon.ico': fs.readFileSync(path.join(appInfo.baseDir, 'favicon.ico')),
+  };
+
+  // 配置渲染器
   config.view = {
     defaultViewEngine: 'ejs',
     mapping: {
@@ -33,14 +41,6 @@ module.exports = appInfo => {
 
   // add your middleware config here
   config.middleware = [];
-
-  // 配置渲染模板
-  config.view = {
-    defaultViewEngine: 'ejs',
-    mapping: {
-      '.html': 'ejs',
-    },
-  };
 
   // 数据库配置
   config.sequelize = require('./default/sequelize');
@@ -59,7 +59,8 @@ module.exports = appInfo => {
       plugins: [
         'base',
         'nick',
-        'responderCmd', 'responderReply',
+        'responderCmd',
+        'responderReply',
       ],
     },
     webUrl: env('QQBOT_WEB_URL'),
