@@ -18,7 +18,7 @@ module.exports = app => {
   });
   // -------- end sequelize-mg replace --------
 
-  utils.extendModel(model, [ 'source', 'path', 'titleid', 'valid', 'updatetime' ]);
+  utils.extendModel(model, [ 'id', 'source', 'path', 'bind', 'valid', 'updatetime' ]);
   model.associate = function() {
   };
 
