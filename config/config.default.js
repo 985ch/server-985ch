@@ -34,6 +34,14 @@ module.exports = appInfo => {
   // add your middleware config here
   config.middleware = [];
 
+  // 配置渲染模板
+  config.view = {
+    defaultViewEngine: 'ejs',
+    mapping: {
+      '.html': 'ejs',
+    },
+  };
+
   // 数据库配置
   config.sequelize = require('./default/sequelize');
 
