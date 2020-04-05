@@ -33,7 +33,13 @@ module.exports = app => {
         const cur = $(infoList[i]).text();
         const l = cur.indexOf(': ');
         if (l > 0) {
-          info[cur.substring(0, l)] = cur.substring(l + 2);
+          const key = cur.substring(0, l);
+          const data = cur.substring(l + 2);
+          if (info[key]) {
+            info[key].push(data);
+          } else {
+            info[key] = [ data ];
+          }
         }
       }
       // 简介
@@ -41,18 +47,19 @@ module.exports = app => {
       // 摘出全部标题名称
       const names = [];
       if (info['中文名']) {
-        names.push(info['中文名'].replace(/,/g, '，'));
-        if (info['中文名'] !== title) {
-          names.push(title.replace(/,/g, '，'));
-        }
-      } else {
+        names.push(info['中文名'][0].replace(/,/g, '，'));
+      }
+      if (!info['中文名'] || info['中文名'][0] !== title) {
         names.push(title.replace(/,/g, '，'));
       }
       if (info['别名']) {
-        names.push(info['别名'].replace(/,/g, '，'));
+        for (const name of info['别名']) {
+          names.push(name.replace(/,/g, '，'));
+        }
       }
       // 摘出放送时间
-      let timeFlag = info['放送开始'] || info['发售日'] || info['上映年度'] || '1970-01-01';
+      let timeFlag = info['放送开始'] || info['发售日'] || info['上映年度'] || [ '1970-01-01' ];
+      timeFlag = timeFlag[0];
 
       let yearIdx = timeFlag.indexOf('年');
       if (yearIdx === -1) yearIdx = timeFlag.indexOf('-');
@@ -82,12 +89,10 @@ module.exports = app => {
         img,
         json: {
           intro,
-          chapters: info['话数'] || 0,
+          chapters: info['话数'] ? info['话数'][0] : 0,
           bgmID: id,
         },
-        info: {
-          ext: info,
-        },
+        info,
       };
     }
   }
