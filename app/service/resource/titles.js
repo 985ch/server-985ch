@@ -5,13 +5,22 @@ module.exports = app => {
   const db = app.resDB;
   class MyService extends app.Service {
     // 查找作品
-    async find(keyword, types, nsfw) {
-      if (!keyword) {
-        const titles = await db.Titles.simpleFind({ typeid: types, nsfw });
-        return titles;
+    async find(keyword, types, nsfw, offset, limit) {
+      const findJson = {
+        attributes: db.Titles.defaultAttributes,
+        where: {
+          typeid: types,
+          nsfw,
+        },
+        offset,
+        limit,
+        order: [[ 'add_time', 'desc' ]],
+        raw: true,
+      };
+      if (keyword) {
+        findJson.where.names = { [db.Sequelize.Op.like]: `%${keyword}%` };
       }
-      const titles = await db.Titles.simpleFind({ names: { [db.Sequelize.Op.like]: `%${keyword}%` }, typeid: types, nsfw });
-      return titles;
+      return await db.Titles.findAndCountAll(findJson);
     }
     // 获取作品相关数据
     async getData(id) {
