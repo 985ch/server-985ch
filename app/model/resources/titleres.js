@@ -21,6 +21,10 @@ module.exports = app => {
       app.resDB.Titleres,
       { as: 'titleres', foreignKey: 'id', targetKey: 'resid' }
     );
+    app.resDB.Titles.belongsTo(
+      app.resDB.Titleres,
+      { as: 'titleres', foreignKey: 'id', targetKey: 'titleid' }
+    );
   };
 
   return model;

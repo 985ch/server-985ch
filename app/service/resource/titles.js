@@ -17,31 +17,42 @@ module.exports = app => {
         },
         required: false,
       };
+      const titleres = {
+        model: db.Titleres,
+        as: 'titleres',
+        attributes: [],
+        required: false,
+      };
+      const where = {
+        typeid: types,
+        nsfw,
+      };
       const findJson = {
         attributes: [
           ...db.Titles.defaultAttributes,
           [ db.Sequelize.literal('notes.like'), 'like' ],
           [ db.Sequelize.literal('notes.concern'), 'concern' ],
+          [ db.Sequelize.fn('COUNT', db.Sequelize.col('titleres.titleid')), 'count' ],
         ],
-        include: [ notes ],
-        where: {
-          typeid: types,
-          nsfw,
-        },
+        include: [ notes, titleres ],
+        where,
         offset,
         limit,
+        group: 'titles.id',
         order: [[ 'add_time', 'desc' ]],
         raw: true,
       };
 
       if (keyword) {
-        findJson.where.names = { [db.Sequelize.Op.like]: `%${keyword}%` };
+        where.names = { [db.Sequelize.Op.like]: `%${keyword}%` };
       }
       if (concern) {
         notes.where.concern = concern;
         notes.required = true;
       }
-      return await db.Titles.findAndCountAll(findJson);
+      const count = await db.Titles.count({ where, include: [ notes ] });
+      const rows = await db.Titles.findAll(findJson);
+      return { count, rows };
     }
     // 获取作品相关数据
     async getData(id) {
@@ -65,22 +76,15 @@ module.exports = app => {
       return { base, res, note };
     }
     // 写入数据
-    async save(userid, { id, typeid, names, releaseTime, pic, info, nsfw }) {
-      const data = {
-        userid,
-        typeid,
-        names,
-        pic,
-        release_time: new Date(releaseTime),
-        add_time: new Date(),
-        info,
-        nsfw,
-        public: 1,
-      };
+    async save(userid, data) {
+      data.add_time = new Date();
+      data.userid = userid;
+      data.public = 1;
+      const id = data.id;
       if (id > 0) {
         await db.Titles.update(data, { where: { id } });
         data.id = id;
-        return data;
+        return data.data;
       }
       return await db.Titles.create(data);
     }
