@@ -8,7 +8,10 @@ module.exports = app => {
     // 获取作品类型列表
     async getTitleTypes() {
       const types = await cacheMem.get('titletype', async () => {
-        return await db.Titletype.simpleFind();
+        return await db.Titletype.findAll({
+          order: [[ 'id', 'asc' ]],
+          raw: true,
+        });
       });
       return types;
     }
