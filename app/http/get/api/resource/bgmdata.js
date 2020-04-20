@@ -6,12 +6,12 @@
 module.exports = () => {
   return {
     params: {
-      id: { type: 'integer', minimum: 0 }, // 资源ID
+      url: { type: 'string' }, // 资源ID
     },
     // userdata: { permission: true },
     async controller() {
-      const { id } = this.state.params;
-      const result = await this.service.crawler.bangumi.catch(id);
+      const { url } = this.state.params;
+      const result = await this.service.crawler.bangumi.catch(url);
       if (result) {
         this.success(result);
       } else {

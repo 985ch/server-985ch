@@ -8,9 +8,14 @@ const cheerio = require('cheerio');
 module.exports = app => {
   class MyService extends app.Service {
     // 从页面获取具体信息
-    async catch(id) {
+    async catch(url) {
+      let id = 0;
+      if (url.indexOf('/') < 0) {
+        url = 'http://bgm.tv/subject/' + url;
+        id = Number.parseInt(url);
+      }
       // 读取数据
-      const html = await this.ctx.curl('http://bgm.tv/subject/' + id, { timeout: 10000, retry: 3 });
+      const html = await this.ctx.curl(url, { timeout: 10000, retry: 3 });
       if (html.status !== 200) {
         return null;
       }
