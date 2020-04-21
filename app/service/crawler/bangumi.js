@@ -11,8 +11,8 @@ module.exports = app => {
     async catch(url) {
       let id = 0;
       if (url.indexOf('/') < 0) {
-        url = 'http://bgm.tv/subject/' + url;
         id = Number.parseInt(url);
+        url = 'http://bgm.tv/subject/' + url;
       }
       // 读取数据
       const html = await this.ctx.curl(url, { timeout: 10000, retry: 3 });
