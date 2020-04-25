@@ -5,6 +5,7 @@ module.exports = app => {
   class MyService extends app.Service {
     // 从字符串的指定位置开始截取参数
     readParams(text, n) {
+      if (n < 0) return [];
       const params = [];
       const len = text.length;
       do {
@@ -65,7 +66,7 @@ module.exports = app => {
         }
       } while (n < len);
       return {
-        param: len - start > 1 ? text.substring(start) : null,
+        param: len - start > 0 ? text.substring(start) : null,
         next: len,
       };
     }

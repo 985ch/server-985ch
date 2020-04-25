@@ -86,7 +86,7 @@ module.exports = app => {
       return null;
     }
     // 判断是否属于同一天
-    diffrentData(time1, time2, offset) {
+    diffrentDate(time1, time2, offset) {
       const d1 = new Date(time1 - offset);
       const d2 = new Date(time2 - offset);
       return d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
@@ -238,13 +238,14 @@ module.exports = app => {
     }
     // 设置当前周目
     async setLoop(groupid, loop) {
+      loop = loop - 1;
       if (!_.isInteger(loop) || loop < 0) return { reply: '无效的周目数' };
 
       const data = await this.getData(groupid);
       data.loop = loop;
       data.lv = this.getLevel(loop);
       await this.saveData(groupid, data);
-      return { reply: `已设置当前周目为：${loop}周目 ${levels[data.lv]}`, at_sender: false };
+      return { reply: `已设置当前周目为：${loop + 1}周目 ${levels[data.lv]}`, at_sender: false };
     }
     // 开始战斗
     async startFight(gid, uid, team) {
