@@ -286,6 +286,7 @@ module.exports = app => {
     updateData(data, { qq, team }, count, damage) {
       const { cur, log, boss } = data;
       const idx = _.findIndex(log, obj => obj.qq === qq);
+      const bossid = cur.id;
 
       // 更新BOSS血量
       cur.hp -= damage;
@@ -297,7 +298,7 @@ module.exports = app => {
       }
 
       // 添加日志
-      const damageText = `${team}(${boss[cur.id].alias[0]}：${damage})`;
+      const damageText = `${team}(${boss[bossid].alias[0]}：${damage})`;
       if (idx < 0) {
         log.push({ qq, count, damage: [ damageText ] });
       } else {
