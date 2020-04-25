@@ -4,7 +4,7 @@
 const _ = require('lodash');
 
 const levels = [ '阶段一', '阶段二', '阶段三', '阶段四' ];
-const levelLoop = [ 0, 3, 10, 34 ];
+const levelLoop = [ 0, 3, 10, 33 ];
 
 const defaultData = {
   loop: 0, // 团战周目
@@ -89,7 +89,7 @@ module.exports = app => {
     diffrentDate(time1, time2, offset) {
       const d1 = new Date(time1 - offset);
       const d2 = new Date(time2 - offset);
-      return d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
+      return d1.getMonth() !== d2.getMonth() || d1.getDate() !== d2.getDate();
     }
     // 获取团战数据
     async getData(groupid) {
@@ -232,20 +232,19 @@ module.exports = app => {
     // 根据当前周目数获取当前阶段
     getLevel(loop) {
       for (let n = levelLoop.length - 1; n >= 0; n--) {
-        if (loop > n) return loop;
+        if (loop >= levelLoop[n]) return n;
       }
       return 0;
     }
     // 设置当前周目
     async setLoop(groupid, loop) {
-      loop = loop - 1;
       if (!_.isInteger(loop) || loop < 0) return { reply: '无效的周目数' };
 
       const data = await this.getData(groupid);
-      data.loop = loop;
-      data.lv = this.getLevel(loop);
+      data.loop = loop - 1;
+      data.lv = this.getLevel(loop - 1);
       await this.saveData(groupid, data);
-      return { reply: `已设置当前周目为：${loop + 1}周目 ${levels[data.lv]}`, at_sender: false };
+      return { reply: `已设置当前周目为：${loop}周目 ${levels[data.lv]}`, at_sender: false };
     }
     // 开始战斗
     async startFight(gid, uid, team) {
@@ -264,7 +263,7 @@ module.exports = app => {
       data.fighting.push({
         qq: uid,
         team,
-        time: new Date().format('HH:mm:ss'),
+        time: (new Date()).toLocaleTimeString(),
       });
 
       await this.saveData(gid, data);
@@ -311,11 +310,11 @@ module.exports = app => {
       if (!_.isInteger(damage)) return { reply: '请输入你的伤害值' };
       const data = await this.getData(gid);
       const idx = _.findIndex(data.fighting, obj => obj.qq === uid);
-      if (idx < 0) return { reply: '你的战斗尚未开始，因此你上不了树' };
+      if (idx < 0) return { reply: '你要么还没开始战斗，要么已经在树上了，总之现在你不能再上去一次' };
 
       const found = data.fighting[idx];
 
-      found.time = new Date().format('HH:mm:ss');
+      found.time = (new Date()).toLocaleTimeString();
       data.tree.push(found);
       this.updateData(data, found, 0.5, damage);
       data.fighting.splice(idx, 1);
@@ -339,7 +338,7 @@ module.exports = app => {
         data.fighting.splice(idf, 1);
       } else {
         this.updateData(data, data.tree[idt], 0.5, damage);
-        data.fighting.splice(idt, 1);
+        data.tree.splice(idt, 1);
       }
 
       await this.saveData(gid, data);
