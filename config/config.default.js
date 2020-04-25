@@ -59,6 +59,7 @@ module.exports = appInfo => {
       plugins: [
         'base',
         'nick',
+        'pcrhelper',
         'responderCmd',
         'responderReply',
       ],
