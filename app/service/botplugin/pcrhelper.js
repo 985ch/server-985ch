@@ -148,14 +148,14 @@ module.exports = app => {
       let reply = this.getStatusText(data) + '\n';
       const fighters = [];
       for (const fighter of fighting) {
-        const nick = await gm.getNick(fighter.qq, groupid);
+        const nick = await gm.getNickOrCard(fighter.qq, groupid);
         fighters.push(`${nick} ${fighter.team} ${fighter.time}\n`);
       }
       if (fighters.length > 0)reply += '战斗中：\n' + fighters.join('\n');
 
       const treemen = [];
       for (const treeman of tree) {
-        const nick = await gm.getNick(treeman.qq, groupid);
+        const nick = await gm.getNickOrCard(treeman.qq, groupid);
         treemen.push(`${nick} ${treeman.team} ${treeman.time}\n`);
       }
       if (treemen.length > 0)reply += '挂在树上：\n' + treemen.join('\n');
@@ -169,7 +169,7 @@ module.exports = app => {
       const logs = [];
       const log = yestoday ? data.log_yestoday : data.log;
       for (const cur of log) {
-        const nick = await gm.getNick(cur.qq, groupid);
+        const nick = await gm.getNickOrCard(cur.qq, groupid);
         logs.push(`${nick} 已出${cur.count}刀 队伍：${cur.damage.join(' ')}`);
       }
       if (logs.length > 0) {
@@ -287,7 +287,7 @@ module.exports = app => {
       });
 
       await this.saveData(gid, data);
-      const nick = await this.service.qqbot.groupmember.getNick(uid, gid);
+      const nick = await this.service.qqbot.groupmember.getNickOrCard(uid, gid);
       return { reply: `${nick}的战斗开始了!\n${this.getStatusText(data)}`, at_sender: false };
     }
     // 放弃出刀
@@ -299,7 +299,7 @@ module.exports = app => {
       data.fighting.splice(idx, 1);
 
       await this.saveData(gid, data);
-      const nick = await this.service.qqbot.groupmember.getNick(uid, gid);
+      const nick = await this.service.qqbot.groupmember.getNickOrCard(uid, gid);
       return { reply: `${nick}放弃了战斗!\n${this.getStatusText(data)}`, at_sender: false };
     }
     // 更新团战信息
@@ -341,7 +341,7 @@ module.exports = app => {
       data.fighting.splice(idx, 1);
 
       await this.saveData(gid, data);
-      const nick = await this.service.qqbot.groupmember.getNick(uid, gid);
+      const nick = await this.service.qqbot.groupmember.getNickOrCard(uid, gid);
       return { reply: `${nick}上树了!\n${this.getStatusText(data)}`, at_sender: false };
     }
     // 完成战斗
@@ -363,7 +363,7 @@ module.exports = app => {
       }
 
       await this.saveData(gid, data);
-      const nick = await this.service.qqbot.groupmember.getNick(uid, gid);
+      const nick = await this.service.qqbot.groupmember.getNickOrCard(uid, gid);
       if (damage === 0) {
         return { reply: `${nick}${idf >= 0 ? '翻车了' : '从树上摔下来了'}!\n${this.getStatusText(data)}`, at_sender: false };
       }
@@ -390,7 +390,7 @@ module.exports = app => {
       this.updateData(data, result, type === '全刀' ? 1 : 0.5, damage);
 
       await this.saveData(gid, data);
-      return { reply: `已补充一条战斗记录。\n${this.getStatusText(data)}` };
+      return { reply: `已补充一条战斗记录。\n${this.getStatusText(data)}`, at_sender: false };
     }
   }
   return MyService;
