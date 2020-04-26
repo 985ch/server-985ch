@@ -166,7 +166,7 @@ module.exports = app => {
       const gm = this.service.qqbot.groupmember;
       let { qq } = gm.getPronous(member, history);
       if (!qq) {
-        const found = gm.find(groupid, member, true);
+        const found = await gm.find(groupid, member, true);
         if (!found) return { reply: `抱歉，我不知道${member}是谁`, at_sender: false };
         qq = found.qq;
       }
