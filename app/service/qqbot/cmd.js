@@ -34,9 +34,7 @@ module.exports = app => {
       const start = n;
       let flag;
       switch (text[start]) {
-        case '[':
-          flag = ']';
-          break;
+
         case "'":
         case '"':
         case '`':

@@ -374,9 +374,8 @@ module.exports = app => {
       const gm = this.service.qqbot.groupmember;
       let { qq } = gm.getPronous(nick, history);
       if (!qq) {
-        const member = await gm.find(gid, nick, true);
-        if (!member) return { reply: `找不到名为${nick}的群友` };
-        qq = member.qq;
+        qq = await gm.find(gid, nick, true);
+        if (!qq) return { reply: `找不到名为${nick}的群友` };
       }
 
       const data = await this.getData(gid);

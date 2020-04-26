@@ -55,7 +55,7 @@ module.exports = app => {
       if (nick) return nick;
       return await this.getCard(qq, groupid);
     }
-    // 获取群成员信息
+    // 获取群成员QQ号
     async find(groupid, nick, onlyOne = true) {
       const { card, nickname, title } = await this.service.qqbot.group.getGroupMembers(groupid);
       const foundMember = await memory.get(`gm-names:${groupid}:${nick}`, async () => {

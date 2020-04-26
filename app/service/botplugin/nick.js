@@ -166,9 +166,8 @@ module.exports = app => {
       const gm = this.service.qqbot.groupmember;
       let { qq } = gm.getPronous(member, history);
       if (!qq) {
-        const found = await gm.find(groupid, member, true);
-        if (!found) return { reply: `抱歉，我不知道${member}是谁`, at_sender: false };
-        qq = found.qq;
+        qq = await gm.find(groupid, member, true);
+        if (!qq) return { reply: `抱歉，我不知道${member}是谁`, at_sender: false };
       }
       nick = _.trim(nick);
       if (nick.length > 20) return { reply: '昵称太长，无法记录', at_sender: false };
