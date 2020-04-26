@@ -162,11 +162,11 @@ module.exports = app => {
       return result.length > 0 ? result : null;
     }
     // 设置昵称
-    async setNick(uid, gid, history, member, nick) {
+    async setNick(uid, groupid, history, member, nick) {
       const gm = this.service.qqbot.groupmember;
       let { qq } = gm.getPronous(member, history);
       if (!qq) {
-        const found = gm.find(gid, member, true);
+        const found = gm.find(groupid, member, true);
         if (!found) return { reply: `抱歉，我不知道${member}是谁`, at_sender: false };
         qq = found.qq;
       }
@@ -174,20 +174,20 @@ module.exports = app => {
       if (nick.length > 20) return { reply: '昵称太长，无法记录', at_sender: false };
       // 避免昵称重复
       const found = await db.Groupnick.simpleFindOne({
-        gid,
+        groupid,
         [db.Sequelize.Op.or]: [
           { nick, qq: { [db.Sequelize.Op.ne]: qq } },
           { qq: nick },
         ],
       }, [ 'qq' ]);
       if (found) {
-        const card = await gm.getCard(found.qq, gid);
+        const card = await gm.getCard(found.qq, groupid);
         return { reply: `称号 ${nick} 已被群友 ${card} 占用`, at_sender: false };
       }
       // 更新数据
-      await gm.saveNick(uid, gid, qq, nick);
+      await gm.saveNick(uid, groupid, qq, nick);
 
-      const card = await gm.getCard(qq, gid);
+      const card = await gm.getCard(qq, groupid);
       return { reply: `收到，已将 ${card} 标记为 ${nick}`, at_sender: false };
     }
   }

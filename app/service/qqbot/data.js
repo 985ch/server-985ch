@@ -69,7 +69,7 @@ module.exports = app => {
       let params = null;
       const cmd = this.service.qqbot.cmd;
       return {
-        cmd: text.substring(1, n > 0 ? n : undefined),
+        cmd: text.substring(1, n > 0 ? n : undefined).toLowerCase(),
         get params() {
           if (params) return params;
           params = cmd.readParams(text, n);

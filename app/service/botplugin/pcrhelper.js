@@ -26,7 +26,7 @@ const defaultData = {
   t: 0, // 时间戳，如果上次时间戳和这次时间戳有差异则出刀记录等都清零
 };
 
-const helpText = `团战小助手是用于记录PCR团战数据的小工具，由于数据都是人工录入，所以在工会成员不按要求录入数据的情况下会出现数据错误的情况。因此不建议太过依赖该工具。
+const helpReply = `团战小助手是用于记录PCR团战数据的小工具，由于数据都是人工录入，所以在工会成员不按要求录入数据的情况下会出现数据错误的情况。因此不建议太过依赖该工具。
  团战小助手命令说明：
 -团战状态           查看当前团战的状态
 -出刀记录           查看本日出刀的记录
@@ -51,7 +51,7 @@ module.exports = app => {
   class MyService extends app.Service {
     // 处理消息
     async onMessage({ cmd, user, group, isPrivate, history }) {
-      if (cmd.cmd === '关于团战小助手' && isPrivate) return { reply: helpText };
+      if (cmd.cmd === '关于团战小助手' && isPrivate) return { reply: helpReply };
       if (isPrivate) return null;
       switch (cmd.cmd) {
         case '团战状态': // 查看当前团战状态
@@ -68,26 +68,27 @@ module.exports = app => {
           return await this.hangTree(group.id, user.qq, Number.parseInt(cmd.params[0]));
         case '补充出刀结果': // -补充出刀结果 【群友昵称】 【队伍】 【出刀状态】 【伤害】
           return await this.addLog(group.id, history, cmd.params[0], cmd.params[1], cmd.params[2], Number.parseInt(cmd.params[3]));
-        case '报告BOSS状态': // -汇报BOSS状态 老三 10000
+        case '报告boss状态': // -汇报BOSS状态 老三 10000
           return await this.setBossStatus(group.id, cmd.params[0], Number.parseInt(cmd.params[1]));
         case '报告团战周目': // -设置团战周目 1
           return await this.setLoop(group.id, Number.parseInt(cmd.params[0]));
-        case '设置PCR服务器': // -设置PCR服务器 日服
+        case '设置pcr服务器': // -设置PCR服务器 日服
           if (!user.isAdmin) return { reply: '没有权限，请让管理员代为设置' };
           return await this.setServer(group.id, cmd.params[0]);
-        case '设置BOSS别名': // -设置BOSS别名 老一 龙
+        case '设置boss别名': // -设置BOSS别名 老一 龙
           if (!user.isAdmin) return { reply: '没有权限，请让管理员代为设置别名' };
           return await this.setBossAlias(group.id, cmd.params[0], cmd.params[1]);
-        case '设置BOSS血量': // -设置BOSS血量 老一 一阶段 1000000
+        case '设置boss血量': // -设置BOSS血量 老一 一阶段 1000000
           if (!user.isAdmin) return { reply: '没有权限，请让管理员代为设置血量' };
           return await this.setBossHP(group.id, cmd.params[0], cmd.params[1], Number.parseInt(cmd.params[2]));
-        case '确认BOSS血量': // -确认BOSS血量 一阶段
+        case '确认boss血量': // -确认BOSS血量 一阶段
           return await this.showBossHP(group.id, cmd.params[0]);
         default:
           break;
       }
       return null;
     }
+    get helpText() { return helpReply; }
     // 判断是否属于同一天
     diffrentDate(time1, time2, offset) {
       const d1 = new Date(time1 - offset);
