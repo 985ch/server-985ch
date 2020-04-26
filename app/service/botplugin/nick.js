@@ -169,7 +169,7 @@ module.exports = app => {
         qq = await gm.find(groupid, member, true);
         if (!qq) return { reply: `抱歉，我不知道${member}是谁`, at_sender: false };
       }
-      nick = _.trim(nick);
+      if (!nick || nick.length === 0) return { reply: '昵称不可为空', at_sender: false };
       if (nick.length > 20) return { reply: '昵称太长，无法记录', at_sender: false };
       // 避免昵称重复
       const found = await db.Groupnick.simpleFindOne({
