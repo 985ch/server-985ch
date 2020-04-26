@@ -59,7 +59,13 @@ module.exports = app => {
     async find(groupid, nick, onlyOne = true) {
       const { card, nickname, title } = await this.service.qqbot.group.getGroupMembers(groupid);
       const foundMember = await memory.get(`gm-names:${groupid}:${nick}`, async () => {
-        const found = await db.Groupnick.simpleFindOne({ groupid, nick }, [ 'qq' ]);
+        const found = await db.Groupnick.simpleFindOne({
+          groupid,
+          [db.Sequelize.Op.or]: [
+            { nick },
+            { qq: nick },
+          ],
+        }, [ 'qq' ]);
         return found ? found.qq : null;
       }, { ttl: 300 });
       if (foundMember && onlyOne) return foundMember;

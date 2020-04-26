@@ -33,6 +33,7 @@ const helpText = `团战小助手是用于记录PCR团战数据的小工具，�
 -开始出刀 【队名】   告诉bot你即将出刀，为了便于记忆请输入出刀的队名，例如“物理一队”，“魔法一队”，“甜心刀”等
 -放弃出刀           告诉bot，你虽然刚才说你要出刀，但是你放弃了。注意，放弃出刀是指次数没减少而且没有上树的情况，凡是打了就不算放弃出刀
 -完成出刀 【伤害值】 告诉bot你的一刀已经打完了。注意，打完是指一个队伍已经用完，不会继续用这个队伍战斗的情况
+-补充出刀结果 【群友昵称】 【队伍】 【出刀状态】 【伤害】 补录群友的出刀结果，无法记录尚未入群的人的数据。出刀状态只能是“全刀”或者是“半刀”中的一个
 -挂树 【伤害值】     告诉bot你已经挂到树上了。挂树是指你当前的队伍被锁死，并且次数没有用完，下一场战斗无法选择其他队伍的情况
 -报告BOSS状态 【名字】 【剩余血量】   人工修改BOSS当前的状态。由于各种原因导致bot储存的当前状态和游戏里的数据不符的时候，可以用这个命令来校正数据
 -报告团战周目 【当前周目】  人工修改当前团战的周目。由于各种原因导致bot显示的当前周目和游戏中不符的时候，可以用这个命令来校正数据
@@ -49,7 +50,7 @@ module.exports = app => {
 
   class MyService extends app.Service {
     // 处理消息
-    async onMessage({ cmd, user, group, isPrivate }) {
+    async onMessage({ cmd, user, group, isPrivate, history }) {
       if (cmd.cmd === '关于团战小助手' && isPrivate) return { reply: helpText };
       if (isPrivate) return null;
       switch (cmd.cmd) {
@@ -65,6 +66,8 @@ module.exports = app => {
           return await this.completeFight(group.id, user.qq, Number.parseInt(cmd.params[0]));
         case '挂树': // -挂树 100000
           return await this.hangTree(group.id, user.qq, Number.parseInt(cmd.params[0]));
+        case '补充出刀结果': // -补充出刀结果 【群友昵称】 【队伍】 【出刀状态】 【伤害】
+          return await this.addLog(group.id, history, cmd.params[0], cmd.params[1], cmd.params[2], Number.parseInt(cmd.params[3]));
         case '报告BOSS状态': // -汇报BOSS状态 老三 10000
           return await this.setBossStatus(group.id, cmd.params[0], Number.parseInt(cmd.params[1]));
         case '报告团战周目': // -设置团战周目 1
@@ -119,35 +122,48 @@ module.exports = app => {
       data[key] = value;
       await cache.setCache('pcrhelper:' + groupid, data, { ttl: 7 * 24 * 3600 });
     }
+    // 获取团战状态文本
+    getStatusText({ loop, lv, cur, boss, fighting, tree }) {
+      let text = `当前状态：${loop + 1}周目 ${levels[lv]} ${boss[cur.id].alias[0]}  ${cur.hp}/${boss[cur.id].hp[lv]}`;
+      if (fighting.length > 0) {
+        text += ` 战斗中${fighting.length}人`;
+      }
+      if (tree.length > 0) {
+        text += ` 树上${tree.length}人`;
+      }
+      return text;
+    }
     // 获取团战状态
     async status(groupid) {
-      const { loop, lv, cur, boss, fighting, tree } = await this.getData(groupid);
+      const data = await this.getData(groupid);
+      const { lv, boss, fighting, tree } = data;
 
       if (!boss[lv]) return { reply: `管理员尚未设置${levels[lv]}的BOSS血量，无法查看团战状态`, at_sender: false };
 
       const gm = this.service.qqbot.groupmember;
-      let reply = `当前BOSS状态：${loop + 1}周目 ${levels[lv]} ${boss[cur.id].alias[0]}  ${cur.hp}/${boss[cur.id].hp[lv]}\n`;
+      let reply = this.getStatusText(data) + '\n';
       const fighters = [];
       for (const fighter of fighting) {
         const nick = await gm.getNick(fighter.qq, groupid);
         fighters.push(`${nick} ${fighter.team} ${fighter.time}\n`);
       }
-      if (fighters.length > 0)reply += '正在出刀：\n' + fighters.join('\n');
+      if (fighters.length > 0)reply += '战斗中：\n' + fighters.join('\n');
 
       const treemen = [];
       for (const treeman of tree) {
         const nick = await gm.getNick(treeman.qq, groupid);
         treemen.push(`${nick} ${treeman.team} ${treeman.time}\n`);
       }
-      if (treemen.length > 0)reply += '还在树上：\n' + treemen.join('\n');
+      if (treemen.length > 0)reply += '挂在树上：\n' + treemen.join('\n');
 
       return { reply, at_sender: false };
     }
     // 获取本日出刀记录
-    async showLog(groupid) {
+    async showLog(groupid, yestoday = false) {
       const gm = this.service.qqbot.groupmember;
-      const { log } = await this.getData(groupid);
+      const data = await this.getData(groupid);
       const logs = [];
+      const log = yestoday ? data.log_yestoday : data.log;
       for (const cur of log) {
         const nick = await gm.getNick(cur.qq, groupid);
         logs.push(`${nick} 已出${cur.count}刀 队伍：${cur.damage.join(' ')}`);
@@ -222,12 +238,12 @@ module.exports = app => {
 
       const data = await this.getData(groupid);
       const id = this.findBoss(data.boss, nick);
-      if (id < 0) return { reply: '设置别名失败，无法找到目标BOSS', at_sender: false };
+      if (id < 0) return { reply: '设置状态失败，无法找到目标BOSS', at_sender: false };
 
       data.cur = { id, hp };
       await this.saveData(groupid, data);
 
-      return { reply: `已记录当前BOSS状态为：${nick} ${hp}/${data.boss[id].hp[data.lv]}`, at_sender: false };
+      return { reply: `已修改\n${this.getStatusText(data)}`, at_sender: false };
     }
     // 根据当前周目数获取当前阶段
     getLevel(loop) {
@@ -244,7 +260,7 @@ module.exports = app => {
       data.loop = loop - 1;
       data.lv = this.getLevel(loop - 1);
       await this.saveData(groupid, data);
-      return { reply: `已设置当前周目为：${loop}周目 ${levels[data.lv]}`, at_sender: false };
+      return { reply: `已修改\n${this.getStatusText(data)}`, at_sender: false };
     }
     // 开始战斗
     async startFight(gid, uid, team) {
@@ -268,7 +284,7 @@ module.exports = app => {
 
       await this.saveData(gid, data);
       const nick = await this.service.qqbot.groupmember.getNick(uid, gid);
-      return { reply: `${nick}的战斗开始了!`, at_sender: false };
+      return { reply: `${nick}的战斗开始了!\n${this.getStatusText(data)}`, at_sender: false };
     }
     // 放弃出刀
     async skipFight(gid, uid) {
@@ -280,7 +296,7 @@ module.exports = app => {
 
       await this.saveData(gid, data);
       const nick = await this.service.qqbot.groupmember.getNick(uid, gid);
-      return { reply: `${nick}放弃了战斗!`, at_sender: false };
+      return { reply: `${nick}放弃了战斗!\n${this.getStatusText(data)}`, at_sender: false };
     }
     // 更新团战信息
     updateData(data, { qq, team }, count, damage) {
@@ -322,7 +338,7 @@ module.exports = app => {
 
       await this.saveData(gid, data);
       const nick = await this.service.qqbot.groupmember.getNick(uid, gid);
-      return { reply: `${nick}上树了!`, at_sender: false };
+      return { reply: `${nick}上树了!\n${this.getStatusText(data)}`, at_sender: false };
     }
     // 完成战斗
     async completeFight(gid, uid, damage) {
@@ -345,10 +361,32 @@ module.exports = app => {
       await this.saveData(gid, data);
       const nick = await this.service.qqbot.groupmember.getNick(uid, gid);
       if (damage === 0) {
-        return { reply: `${nick}${idf >= 0 ? '翻车了' : '从树上摔下来了'}!`, at_sender: false };
+        return { reply: `${nick}${idf >= 0 ? '翻车了' : '从树上摔下来了'}!\n${this.getStatusText(data)}`, at_sender: false };
       }
-      return { reply: `${nick}${idf >= 0 ? '完成了一场战斗' : '从树上爬下来了'}!`, at_sender: false };
+      return { reply: `${nick}${idf >= 0 ? '完成了一场战斗' : '从树上爬下来了'}!\n${this.getStatusText(data)}`, at_sender: false };
 
+    }
+    // 补充出刀状态
+    async addLog(gid, history, nick, team, type, damage) {
+      if ((type !== '全刀' && type !== '半刀') || !_.isInteger(damage) || damage < 0) return { reply: '无效的参数' };
+
+      const gm = this.service.qqbot.groupmember;
+      let { qq } = gm.getPronous(nick, history);
+      if (!qq) {
+        const member = await gm.find(gid, nick, true);
+        if (!member) return { reply: `找不到名为${nick}的群友` };
+        qq = member.qq;
+      }
+
+      const data = await this.getData(gid);
+      const result = {
+        qq,
+        team,
+        time: (new Date()).toLocaleTimeString(),
+      };
+      this.updateData(data, result, type === '全刀' ? 1 : 0.5, damage);
+
+      return { reply: `已补充一条战斗记录。\n${this.getStatusText(data)}` };
     }
   }
   return MyService;

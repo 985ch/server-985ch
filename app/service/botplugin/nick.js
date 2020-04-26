@@ -7,7 +7,7 @@ module.exports = app => {
   const db = app.qqDB;
   class MyService extends app.Service {
     // 处理消息
-    async onMessage({ selfid, user, isPrivate, history, group }, { raw_message }) {
+    async onMessage({ selfid, user, isPrivate, history, group, cmd }, { raw_message }) {
 
       if (isPrivate) return null;
       // 判断是否询问群友
@@ -16,9 +16,8 @@ module.exports = app => {
         return await this.replyWho(group.id, selfid, user.qq, info);
       }
       // 判断是否标记群友
-      const data = await this.checkRemember(group.id, raw_message, history);
-      if (data) {
-        return await this.remember(user.qq, group.id, data.qq, data.nick);
+      if (cmd.cmd === '设置昵称') {
+        return await this.setNick(user.qq, group.id, history, cmd.params[0], cmd.params[1]);
       }
       return null;
     }
@@ -46,41 +45,6 @@ module.exports = app => {
         if (who) return who;
       }
       return (askType > 0) ? { nick } : null;
-    }
-    // 检查是否在标记
-    async checkRemember(groupid, msg, history) {
-      const helper = this.ctx.helper;
-      const gm = this.service.qqbot.groupmember;
-
-      // 以at开头
-      if (_.startsWith(msg, '[CQ:at,qq=')) {
-        const end = msg.indexOf(']', 10);
-        if (end > 10) {
-          const temp = _.trim(msg.substring(end + 1));
-          if (temp[0] === '是') {
-            return { qq: msg.substring(10, end), nick: temp.substring(1) };
-          }
-        }
-      }
-      // 假命令符
-      const nickText = helper.cutStarts(msg, [ '-我是', '-我就是', '-你是', '-你就是' ]);
-      if (nickText) {
-        const who = gm.getPronous(msg[1], history);
-        return { qq: who.qq, nick: _.trim(nickText) };
-      }
-
-      // 以特殊标记开头
-      const mainText = helper.cutStarts(msg, [ '记住，', '记好', '记好了，', '给我记住，', '记清楚了，' ]);
-
-      if (mainText) {
-        const list = helper.split2(mainText, [ '是', '就是' ]);
-        for (const cur of list) {
-          if (cur[1] === '') continue;
-          const qq = await gm.getMember(cur[0], groupid, history);
-          if (qq) return { qq, nick: _.trim(cur[1]) };
-        }
-      }
-      return null;
     }
     // 回答我不知道
     idontknow({ nick }) {
@@ -197,25 +161,33 @@ module.exports = app => {
       const result = _.map(found, cur => members.qq[cur]);
       return result.length > 0 ? result : null;
     }
-    // 记忆成员
-    async remember(addedUser, groupid, qq, nick) {
+    // 设置昵称
+    async setNick(uid, gid, history, member, nick) {
       const gm = this.service.qqbot.groupmember;
-      // 去掉末尾的标点符号
-      if ('!！?？.。'.indexOf(nick[nick.length - 1]) >= 0) {
-        nick = nick.substring(0, nick.length - 1);
+      let { qq } = gm.getPronous(member, history);
+      if (!qq) {
+        const found = gm.find(gid, member, true);
+        if (!found) return { reply: `抱歉，我不知道${member}是谁`, at_sender: false };
+        qq = found.qq;
       }
       nick = _.trim(nick);
       if (nick.length > 20) return { reply: '昵称太长，无法记录', at_sender: false };
       // 避免昵称重复
-      const found = await db.Groupnick.simpleFindOne({ groupid, nick, qq: { [db.Sequelize.Op.ne]: qq } }, [ 'qq' ]);
+      const found = await db.Groupnick.simpleFindOne({
+        gid,
+        [db.Sequelize.Op.or]: [
+          { nick, qq: { [db.Sequelize.Op.ne]: qq } },
+          { qq: nick },
+        ],
+      }, [ 'qq' ]);
       if (found) {
-        const card = await gm.getCard(found.qq, groupid);
+        const card = await gm.getCard(found.qq, gid);
         return { reply: `称号 ${nick} 已被群友 ${card} 占用`, at_sender: false };
       }
       // 更新数据
-      await gm.saveNick(addedUser, groupid, qq, nick);
+      await gm.saveNick(uid, gid, qq, nick);
 
-      const card = await gm.getCard(qq, groupid);
+      const card = await gm.getCard(qq, gid);
       return { reply: `收到，已将 ${card} 标记为 ${nick}`, at_sender: false };
     }
   }
