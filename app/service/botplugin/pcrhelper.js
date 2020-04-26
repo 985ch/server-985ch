@@ -76,7 +76,7 @@ module.exports = app => {
           if (!user.isAdmin) return { reply: '没有权限，请让管理员代为设置' };
           return await this.setServer(group.id, cmd.params[0]);
         case '设置boss别名': // -设置BOSS别名 老一 龙
-          if (!user.isAdmin) return { reply: '没有权限，请让管理员代为设置别名' };
+          // if (!user.isAdmin) return { reply: '没有权限，请让管理员代为设置别名' };
           return await this.setBossAlias(group.id, cmd.params[0], cmd.params[1]);
         case '设置boss血量': // -设置BOSS血量 老一 一阶段 1000000
           if (!user.isAdmin) return { reply: '没有权限，请让管理员代为设置血量' };
@@ -201,7 +201,7 @@ module.exports = app => {
       const data = await this.getData(groupid);
       const id = this.findBoss(data.boss, oldNick);
       if (id < 0) return { reply: '设置别名失败，无法找到目标BOSS', at_sender: false };
-      if (this.findBoss(data.boss, newNick)) return { reply: '设置别名失败，和现有的BOSS发生重名', at_sender: false };
+      if (this.findBoss(data.boss, newNick) >= 0) return { reply: '设置别名失败，和现有的BOSS发生重名', at_sender: false };
 
       data.boss[id].alias.unshift(newNick);
       await this.saveData(groupid, data);
@@ -217,7 +217,7 @@ module.exports = app => {
 
       const data = await this.getData(groupid);
       const id = this.findBoss(data.boss, nick);
-      if (id < 0) return { reply: '设置别名失败，无法找到目标BOSS', at_sender: false };
+      if (id < 0) return { reply: '设置HP失败，无法找到目标BOSS', at_sender: false };
 
       data.boss[id].hp[lv] = hp;
       await this.saveData(groupid, data);
