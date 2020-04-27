@@ -155,13 +155,13 @@ module.exports = app => {
         const nick = await gm.getNickOrCard(fighter.qq, groupid);
         fighters.push(`${nick}(${fighter.time})`);
       }
-      if (fighters.length > 0)text += `战斗中${fighters.length}人：${fighters.join(',')}`;
+      if (fighters.length > 0)text += `\n战斗中${fighters.length}人：${fighters.join(',')}`;
       const treemen = [];
       for (const treeman of tree) {
         const nick = await gm.getNickOrCard(treeman.qq, groupid);
-        treemen.push(`${nick}(${treeman.team}:${treeman.time})`);
+        treemen.push(`${nick}([${treeman.team}]${treeman.time})`);
       }
-      if (treemen.length > 0)text += `挂在树上${treemen.length}人：\n${treemen.join('\n')}`;
+      if (treemen.length > 0)text += `\n挂在树上${treemen.length}人：\n${treemen.join('\n')}`;
       return text;
     }
     // 获取团战状态
@@ -324,7 +324,7 @@ module.exports = app => {
       }
 
       // 添加日志
-      const damageText = `${team}：${damage}(${time}))`;
+      const damageText = `[${team}]${damage}(${time}))`;
       if (idx < 0) {
         log.push({ qq, count, damage: [ damageText ] });
       } else {
