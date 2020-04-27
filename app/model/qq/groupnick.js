@@ -6,7 +6,7 @@ module.exports = app => {
   const DataTypes = app.Sequelize;
   // -------- begin sequelize-mg replace --------
   const model = app.qqDB.define('groupnick', {
-    groupid: { type: DataTypes.INTEGER(11), allowNull: false, primaryKey: true }, //  群号
+    groupid: { type: DataTypes.BIGINT, allowNull: false, primaryKey: true }, //  群号
     qq: { type: DataTypes.STRING(20), allowNull: false, primaryKey: true }, // QQ
     addedUser: { type: DataTypes.STRING(20), allowNull: false, primaryKey: true }, // 添加者
     nick: { type: DataTypes.STRING(20), allowNull: false }, // 昵称

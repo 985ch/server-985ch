@@ -8,7 +8,7 @@ module.exports = () => {
     params: {
       url: { type: 'string' }, // 资源ID
     },
-    // userdata: { permission: true },
+    userdata: { permission: true },
     async controller() {
       const { url } = this.state.params;
       const result = await this.service.crawler.bangumi.catch(url);
