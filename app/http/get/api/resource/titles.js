@@ -9,7 +9,7 @@ module.exports = () => {
       keyword: { type: 'string', optional: true }, // 关键字
       types: { type: 'array', items: { type: 'integer' } }, // 类型
       nsfw: { type: 'integer', enum: [ 0, 1 ] }, // 是否NSFW
-      concern: { type: 'integer', enum: [ 0, 1 ] }, // 是否NSFW
+      concern: { type: 'integer', enum: [ 0, 1, 2 ] }, // 关注状态
       offset: { type: 'integer', minimum: 0, default: 0 }, // 偏移量
       limit: { type: 'integer', mininum: 1, default: 20 }, // 单页限制数量
     },
