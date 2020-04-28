@@ -7,7 +7,7 @@ module.exports = () => {
   return {
     params: {
       id: { type: 'integer', minimum: 0 }, // 作品ID
-      concern: { type: 'integer', enum: [ 0, 1 ] }, // 关注状态
+      concern: { type: 'integer', enum: [ 0, 1, 2 ] }, // 关注状态
     },
     userdata: { permission: 'editor' },
     async controller() {

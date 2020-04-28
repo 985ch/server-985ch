@@ -324,7 +324,7 @@ module.exports = app => {
       }
 
       // 添加日志
-      const damageText = `[${team}]${damage}(${time}))`;
+      const damageText = `[${team}]${damage}(${time})`;
       if (idx < 0) {
         log.push({ qq, count, damage: [ damageText ] });
       } else {
