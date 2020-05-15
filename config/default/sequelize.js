@@ -34,5 +34,10 @@ module.exports = {
       baseDir: 'model/resources',
       database: 'resources',
     }),
+    _.extend({}, cfg, {
+      delegate: 'psiDB',
+      baseDir: 'model/psi',
+      database: 'psi',
+    }),
   ],
 };

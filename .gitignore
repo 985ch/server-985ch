@@ -16,4 +16,6 @@ app/public
 app/view/index.html
 app/http/get/test.js
 app/http/post/test.js
+app/http/get/test*.js
+app/http/post/test*.js
 pm2.json
