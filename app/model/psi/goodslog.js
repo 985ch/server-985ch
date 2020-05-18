@@ -7,7 +7,6 @@ module.exports = app => {
   // -------- begin sequelize-mg replace --------
   const model = app.psiDB.define('goodslog', {
     logid: { type: DataTypes.INTEGER(11), allowNull: false, primaryKey: true }, // 对应订单ID
-    storeid: { type: DataTypes.INTEGER(11), allowNull: false, primaryKey: true }, // 对应仓库ID
     goodsid: { type: DataTypes.INTEGER(11), allowNull: false, primaryKey: true }, // 对应商品ID
     num: { type: DataTypes.INTEGER(11), allowNull: false }, // 数量
   }, {
@@ -15,7 +14,7 @@ module.exports = app => {
   });
   // -------- end sequelize-mg replace --------
 
-  utils.extendModel(model, [ 'logid', 'goodsid', 'storeid', 'num' ]);
+  utils.extendModel(model, [ 'logid', 'goodsid', 'num' ]);
   model.associate = function() {
     app.psiDB.Goodslog.belongsTo(
       app.psiDB.Logs,

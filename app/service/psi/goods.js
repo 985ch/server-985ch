@@ -3,7 +3,7 @@
 
 const _ = require('lodash');
 
-const maxLevel = 5;
+const maxLevel = 6;
 
 module.exports = app => {
   const db = app.psiDB;

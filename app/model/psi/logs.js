@@ -7,10 +7,12 @@ module.exports = app => {
   // -------- begin sequelize-mg replace --------
   const model = app.psiDB.define('logs', {
     id: { type: DataTypes.INTEGER(11), allowNull: false, primaryKey: true, autoIncrement: true },
-    type: { type: DataTypes.INTEGER(4), allowNull: false, defaultValue: '0' }, // 订单类型 0 进货 1 销售
+    type: { type: DataTypes.INTEGER(4), allowNull: false, defaultValue: '0' }, // 订单类型 0 进货 1 出货 2 充值 3 储值 4 其他支出 5 其他收入
     memberid: { type: DataTypes.INTEGER(11), allowNull: false }, // 目标对象
-    amount: { type: DataTypes.DECIMAL, allowNull: false, defaultValue: '0.00' }, // 金额，为正数时指收入，为负数时指支出
-    postage: { type: DataTypes.DECIMAL, allowNull: false, defaultValue: '0.00' }, // 邮费，一般为正数或0
+    storeid: { type: DataTypes.INTEGER(11), allowNull: true, defaultValue: '1' }, // 相关仓库
+    amount: { type: DataTypes.DECIMAL, allowNull: false, defaultValue: '0.00' }, // 金额
+    cost: { type: DataTypes.DECIMAL, allowNull: false, defaultValue: '0.00' }, // 货物成本
+    postage: { type: DataTypes.DECIMAL, allowNull: false, defaultValue: '0.00' }, // 邮费/额外成本
     info: { type: DataTypes.TEXT, allowNull: true }, // 备注
     logtime: { type: DataTypes.DATE, allowNull: false, defaultValue: app.psiDB.fn('current_timestamp') }, // 订单时间
     status: { type: DataTypes.INTEGER(4), allowNull: false, defaultValue: '1' }, // 订单状态 0 未完成 1 完成
@@ -20,9 +22,9 @@ module.exports = app => {
   });
   // -------- end sequelize-mg replace --------
 
-  utils.extendModel(model, [ 'id', 'type', 'memberid', 'amount', 'postage', 'info', 'logtime', 'status' ], [
+  utils.extendModel(model, [ 'id', 'type', 'memberid', 'storeid', 'amount', 'cost', 'postage', 'info', 'logtime', 'status' ], [
     {
-      list: [ 'amount', 'postage' ],
+      list: [ 'amount', 'cost', 'postage' ],
       filter: raw => Number.parseFloat(raw),
     },
   ]);

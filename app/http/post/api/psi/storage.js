@@ -11,6 +11,7 @@ module.exports = () => {
       info: { type: 'string' }, // 备注
       type: { type: 'integer', enum: [ 0, 1, 2 ] }, // 类型
       memberid: { type: 'integer' }, // 关联用户ID
+      balance: { type: 'number' },
       hide: { type: 'integer', eunm: [ 0, 1 ] }, // 是否隐藏
     },
     userdata: { permission: 'psi' },
