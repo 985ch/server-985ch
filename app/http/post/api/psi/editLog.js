@@ -29,8 +29,8 @@ module.exports = () => {
     },
     userdata: { permission: 'psi' },
     async controller() {
-      const { id, type, memberid, storeid, amount, cost, postage, info, logtime, status, goods } = this.state.params;
-      const log = { type, memberid, storeid, amount, cost, postage, info, logtime, status };
+      const { fail, id, log, goods } = this.service.psi.log.checkInput(this.state.params);
+      if (fail) return this.fail(fail);
       const result = await this.service.psi.log.edit(id, log, goods);
       this.success(result);
     },

@@ -28,9 +28,8 @@ module.exports = () => {
     },
     userdata: { permission: 'psi' },
     async controller() {
-      const { type, memberid, storeid, amount, cost, postage, info, logtime, status, goods } = this.state.params;
-      if (goods.length === 0) return this.fail('商品列表不可为空');
-      const log = { type, memberid, storeid, amount, cost, postage, info, logtime, status };
+      const { fail, log, goods } = this.service.psi.log.checkInput(this.state.params);
+      if (fail) return this.fail(fail);
       const result = await this.service.psi.log.add(log, goods);
       this.success(result);
     },
