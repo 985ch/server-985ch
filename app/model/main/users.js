@@ -8,6 +8,7 @@ module.exports = app => {
   const model = app.mainDB.define('users', {
     id: { type: DataTypes.INTEGER(11), allowNull: false, primaryKey: true, autoIncrement: true },
     qq: { type: DataTypes.STRING(20), allowNull: true }, // 绑定QQ
+    password: { type: DataTypes.STRING(50), allowNull: true }, // 加盐的密码
     nickname: { type: DataTypes.STRING(30), allowNull: true }, // 昵称
     rights: { type: DataTypes.TEXT, allowNull: true, defaultValue: '' }, // 用户权限 'root','admin','qqbot',
     config: { type: DataTypes.TEXT, allowNull: false, defaultValue: '{}' }, // 个人配置 qqbot

@@ -6,7 +6,7 @@
 module.exports = () => {
   return {
     params: {
-      url: { type: 'string' }, // 资源ID
+      url: { type: 'string' }, // 资源ID或完整链接
     },
     userdata: { permission: true },
     async controller() {
