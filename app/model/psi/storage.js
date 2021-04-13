@@ -5,6 +5,7 @@ const utils = require('egg-sachikawa').Utils;
 module.exports = app => {
   const DataTypes = app.Sequelize;
   // -------- begin sequelize-mg replace --------
+  // 仓库信息
   const model = app.psiDB.define('storage', {
     id: { type: DataTypes.INTEGER(11), allowNull: false, primaryKey: true, autoIncrement: true },
     name: { type: DataTypes.STRING(50), allowNull: false }, // 仓库名称

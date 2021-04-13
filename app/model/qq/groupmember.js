@@ -6,6 +6,7 @@ const { ungzip } = require('base64zip');
 module.exports = app => {
   const DataTypes = app.Sequelize;
   // -------- begin sequelize-mg replace --------
+  // 群成员
   const model = app.qqDB.define('groupmember', {
     groupid: { type: DataTypes.BIGINT, allowNull: false, primaryKey: true }, // 群号
     qq: { type: DataTypes.BIGINT, allowNull: false, primaryKey: true }, // QQ

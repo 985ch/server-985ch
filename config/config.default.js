@@ -53,17 +53,7 @@ module.exports = appInfo => {
 
   // add your user config here
   const userConfig = {
-    qqbot: {
-      host: env('QQBOT_API_URL'),
-      ip: env('QQBOT_API_IP'),
-      plugins: [
-        'base',
-        'nick',
-        'pcrhelper',
-        'responderCmd',
-        'responderReply',
-      ],
-    },
+    qqbot: require('./default/mirai'),
     webUrl: env('QQBOT_WEB_URL'),
   };
 

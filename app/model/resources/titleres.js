@@ -5,6 +5,7 @@ const utils = require('egg-sachikawa').Utils;
 module.exports = app => {
   const DataTypes = app.Sequelize;
   // -------- begin sequelize-mg replace --------
+  // 作品资源关联表
   const model = app.resDB.define('titleres', {
     id: { type: DataTypes.INTEGER(11), allowNull: false, primaryKey: true, autoIncrement: true }, // 自增ID
     titleid: { type: DataTypes.INTEGER(11), allowNull: false }, // 作品ID

@@ -5,6 +5,7 @@ const utils = require('egg-sachikawa').Utils;
 module.exports = app => {
   const DataTypes = app.Sequelize;
   // -------- begin sequelize-mg replace --------
+  // 资源表
   const model = app.resDB.define('resources', {
     id: { type: DataTypes.INTEGER(11), allowNull: false, autoIncrement: true }, // 自增ID
     source: { type: DataTypes.STRING(50), allowNull: false, primaryKey: true }, // 资源来源

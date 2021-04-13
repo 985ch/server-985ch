@@ -5,6 +5,7 @@ const utils = require('egg-sachikawa').Utils;
 module.exports = app => {
   const DataTypes = app.Sequelize;
   // -------- begin sequelize-mg replace --------
+  // 图库
   const model = app.resDB.define('images', {
     id: { type: DataTypes.INTEGER(11), allowNull: false, primaryKey: true, autoIncrement: true }, // 图片ID
     raw: { type: DataTypes.STRING(400), allowNull: false, defaultValue: '0' }, // 来源路径

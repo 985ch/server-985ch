@@ -5,6 +5,7 @@ const utils = require('egg-sachikawa').Utils;
 module.exports = app => {
   const DataTypes = app.Sequelize;
   // -------- begin sequelize-mg replace --------
+  // 用户备注
   const model = app.resDB.define('notes', {
     typeid: { type: DataTypes.INTEGER(4), allowNull: false, primaryKey: true }, // 类型ID，0作品，1角色，2图片
     titleid: { type: DataTypes.INTEGER(11), allowNull: false, primaryKey: true }, // 作品ID

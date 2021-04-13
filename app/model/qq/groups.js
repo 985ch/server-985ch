@@ -5,6 +5,7 @@ const utils = require('egg-sachikawa').Utils;
 module.exports = app => {
   const DataTypes = app.Sequelize;
   // -------- begin sequelize-mg replace --------
+  // 群信息
   const model = app.qqDB.define('groups', {
     id: { type: DataTypes.BIGINT, allowNull: false, primaryKey: true }, // 群号
     name: { type: DataTypes.STRING(50), allowNull: false, defaultValue: '' }, // 群名称

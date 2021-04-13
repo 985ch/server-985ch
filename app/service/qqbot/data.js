@@ -5,50 +5,66 @@ module.exports = app => {
   const plugins = app.config.qqbot.plugins;
   class MyService extends app.Service {
     // 解析消息，获取命令，用户和群信息并返回
-    async messageInfo(raw) {
-      const { message_type, user_id, raw_message, group_id, anonymous, sender } = raw;
-      const user = await this.getUserData(user_id, group_id, anonymous, sender);
-      const group = await this.service.qqbot.group.getData(group_id);
-      const cmd = this.getCmd(raw_message);
+    async groupMessageInfo(sender, messageChain) {
+      const user = await this.getUserData(sender, sender.group);
+      const group = await this.service.qqbot.group.getData(sender.group);
+      const cmd = this.getCmd(messageChain);
 
       return {
         user,
         group,
-        isPrivate: group.id === 0,
-        plugins: message_type === 'group' ? group.plugins : plugins,
+        isPrivate: false,
+        plugins: group.plugins,
+        cmd,
+      };
+    }
+    async privateMessageInfo(sender, messageChain) {
+      const user = await this.getUserData(sender);
+      const cmd = this.getCmd(messageChain);
+
+      return {
+        user,
+        group: {
+          id: 0,
+          name: 'unknown',
+          plugins: [],
+          config: {},
+        },
+        isPrivate: true,
+        plugins,
         cmd,
       };
     }
     // 获取成员信息
-    async getUserData(qq, groupid, anonymous, { nickname, card, role, level, title }) {
+    async getUserData(sender = {}, group = { id: 0 }) {
+      const { id, memberName, permission } = sender;
       const gm = this.service.qqbot.groupmember;
-      if (anonymous) {
+      if (id === 80000000) {
         return {
           qq: 0,
-          nick: anonymous.name,
+          nick: memberName,
           title: '匿名者',
-          level: 0,
           isAdmin: false,
           isOwner: false,
           roles: [],
           config: {},
         };
       }
-      const user = await this.service.user.cache.getByQQ(qq);
+      const user = await this.service.user.cache.getByQQ(id);
 
-      let nick = await gm.getNick(qq, groupid);
+      let nick = await gm.getNick(id, group.id);
       if (nick === null)nick = card || nickname;
-      const isOwner = role === 'owner';
-      const isAdmin = role === 'admin' || isOwner;
+      const isOwner = permission === 'OWNER';
+      const isAdmin = permission === 'ADMINISTRATOR' || isOwner;
 
-      if (groupid && !user.config.groupid) {
-        user.config.groupid = groupid;
+      if (group.id && !user.config.groupid) {
+        user.config.groupid = group.id;
         await this.service.user.data.setConfig(qq, user.config, 'groupid', groupid);
       }
       return {
         qq: user.qq,
         nick: nick || card || nickname,
-        title: title || isOwner ? '群主' : (isAdmin ? '管理员' : (groupid ? '群友' : '好友')),
+        title: title || isOwner ? '群主' : (isAdmin ? '管理员' : (group.id ? '群友' : '好友')),
         level,
         isAdmin,
         isOwner,
@@ -76,11 +92,6 @@ module.exports = app => {
           return params;
         },
       };
-    }
-    // 保存历史记录
-    async saveHistory({ message_type, message_id, user_id, raw_message, group_id }) {
-      if (message_type !== 'group' || !group_id) return [];
-      return await this.service.qqbot.group.saveHistory(group_id, user_id, message_id, raw_message);
     }
   }
   return MyService;

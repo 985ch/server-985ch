@@ -5,6 +5,7 @@ const utils = require('egg-sachikawa').Utils;
 module.exports = app => {
   const DataTypes = app.Sequelize;
   // -------- begin sequelize-mg replace --------
+  // 应答文本库
   const model = app.qqDB.define('respond', {
     md5: { type: DataTypes.STRING(32), allowNull: false, primaryKey: true }, // 短MD5
     groupid: { type: DataTypes.BIGINT, allowNull: false, primaryKey: true }, // 所属群ID，该值为0即所有群通用

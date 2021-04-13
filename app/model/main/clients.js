@@ -6,6 +6,7 @@ const utils = require('egg-sachikawa').Utils;
 module.exports = app => {
   const DataTypes = app.Sequelize;
   // -------- begin sequelize-mg replace --------
+  // 允许访问的客户端配置
   const model = app.mainDB.define('clients', {
     secret: { type: DataTypes.STRING(50), allowNull: false, primaryKey: true }, // 密钥
     ips: { type: DataTypes.TEXT, allowNull: false, defaultValue: '' }, // IP白名单，用逗号隔开

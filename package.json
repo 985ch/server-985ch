@@ -9,22 +9,22 @@
   },
   "dependencies": {
     "base64zip": "^1.0.0",
-    "cheerio": "^1.0.0-rc.3",
-    "egg": "^2.15.1",
-    "egg-sachikawa": "^1.1.4",
-    "egg-scripts": "^2.11.0",
-    "egg-view-ejs": "^2.0.0",
-    "mysql2": "^2.0.1"
+    "cheerio": "^1.0.0-rc.5",
+    "egg": "^2.29.3",
+    "egg-sachikawa": "^1.2.1",
+    "egg-scripts": "^2.13.0",
+    "egg-view-ejs": "^2.0.1",
+    "mysql2": "^2.2.5"
   },
   "devDependencies": {
-    "autod": "^3.0.1",
+    "autod": "^3.1.1",
     "autod-egg": "^1.1.0",
-    "egg-bin": "^4.11.0",
-    "egg-ci": "^1.11.0",
-    "egg-mock": "^3.21.0",
-    "egg-sequelize-mg": "^1.0.2",
-    "eslint": "^5.13.0",
-    "eslint-config-egg": "^7.1.0"
+    "egg-bin": "^4.15.0",
+    "egg-ci": "^1.18.0",
+    "egg-mock": "^4.1.0",
+    "egg-sequelize-mg": "^1.2.4",
+    "eslint": "^7.23.0",
+    "eslint-config-egg": "^9.0.0"
   },
   "engines": {
     "node": ">=10.0.0"

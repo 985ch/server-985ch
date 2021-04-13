@@ -12,7 +12,7 @@ module.exports = app => {
   const db = app.qqDB;
   class MyService extends app.Service {
     // 获取群数据
-    async getData(groupid) {
+    async getData(groupid, groupName) {
       if (!groupid) {
         return {
           id: 0,
@@ -23,23 +23,20 @@ module.exports = app => {
       }
       const data = await memory.get(`g-data:${groupid}`, async () => {
 
-        // 从酷Q或缓存获取群信息
-        const groupInfo = await this.getInfo(groupid);
-
         // 从数据库获取群配置，并根据实际情况添加或者更新数据
         let dbData = await db.Groups.simpleFindOne({ id: groupid });
         if (!dbData) {
           const created = await db.Groups.create({
-            id: groupInfo.group_id,
-            name: groupInfo.group_name,
+            id: groupid,
+            name: groupName,
             plugins: defaultPlugins,
             config: '{}',
             active: 1,
           });
           dbData = db.Groups.filterAll(created.dataValues);
-        } else if (dbData.name !== groupInfo.group_name) {
+        } else if (dbData.name !== groupName) {
           await db.Groups.update({
-            name: groupInfo.group_name,
+            name: groupName,
             updatetime: Date.now(),
           }, {
             where: { id: groupid },
@@ -47,18 +44,12 @@ module.exports = app => {
         }
         return {
           id: groupid,
-          name: groupInfo.group_name,
+          name: groupName,
           plugins: dbData.active ? dbData.plugins : [],
           config: dbData.config,
         };
       }, { ttl: 3600 });
       return data;
-    }
-    // 获取群信息
-    async getInfo(groupid) {
-      return await memory.get(`g-info:${groupid}`, async () => {
-        return await this.service.rpc.qqbot.getGroupInfo(groupid);
-      }, { ttl: 24 * 3600 });
     }
     // 获取用户所属群ID
     async getUserGroup(qq, config) {
@@ -135,13 +126,13 @@ module.exports = app => {
       await memory.clear(`g-data:${groupid}`);
     }
     // 保存群历史记录
-    async saveHistory(groupid, userid, msgid, msg) {
+    async saveHistory(groupid, qq, msg) {
       const key = `g-history${groupid}`;
       const history = (await cache.getCache(key)) || [];
       if (history.length >= historyLimit) {
         history.pop();
       }
-      history.unshift({ msgid, userid: userid.toString(), msg, t: Date.now() });
+      history.unshift({ userid: qq.toString(), msg, t: Date.now() });
       await cache.setCache(key, history, { ttl: 24 * 3600 });
       return history;
     }

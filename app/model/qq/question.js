@@ -5,6 +5,7 @@ const utils = require('egg-sachikawa').Utils;
 module.exports = app => {
   const DataTypes = app.Sequelize;
   // -------- begin sequelize-mg replace --------
+  // 问题列表
   const model = app.qqDB.define('question', {
     id: { type: DataTypes.INTEGER(11), allowNull: false, primaryKey: true }, // 问题ID
     groupid: { type: DataTypes.BIGINT, allowNull: false, defaultValue: '0' }, // 关联群号，0表示所有群
