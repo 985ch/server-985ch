@@ -43,7 +43,6 @@ module.exports = app => {
         return {
           qq: 0,
           nick: memberName,
-          title: '匿名者',
           isAdmin: false,
           isOwner: false,
           roles: [],
@@ -53,19 +52,17 @@ module.exports = app => {
       const user = await this.service.user.cache.getByQQ(id);
 
       let nick = await gm.getNick(id, group.id);
-      if (nick === null)nick = card || nickname;
+      if (nick === null)nick = memberName;
       const isOwner = permission === 'OWNER';
       const isAdmin = permission === 'ADMINISTRATOR' || isOwner;
 
       if (group.id && !user.config.groupid) {
         user.config.groupid = group.id;
-        await this.service.user.data.setConfig(qq, user.config, 'groupid', groupid);
+        await this.service.user.data.setConfig(id, user.config, 'groupid', group.id);
       }
       return {
         qq: user.qq,
-        nick: nick || card || nickname,
-        title: title || isOwner ? '群主' : (isAdmin ? '管理员' : (group.id ? '群友' : '好友')),
-        level,
+        nick: nick || memberName,
         isAdmin,
         isOwner,
         roles: user.roles,
@@ -73,7 +70,11 @@ module.exports = app => {
       };
     }
     // 解析命令行
-    getCmd(text) {
+    getCmd(messageChain) {
+      if (messageChain[1].type !== 'Plain') {
+        return {};
+      }
+      const text = messageChain[1].text;
       if (text.indexOf('-') !== 0) {
         return {};
       }
