@@ -96,6 +96,16 @@ module.exports = app => {
       const result = await this.requestMirai('POST', '/sendTempMessage', data);
       return result.messageId;
     }
+    // 获取群列表
+    async groupList() {
+      const res = await this.requestMirai('GET', '/groupList');
+      return res.data;
+    }
+    // 获取群成员列表
+    async memberList(groupid) {
+      const res = await this.requestMirai('GET', '/memberList', { target: groupid });
+      return res.data;
+    }
   }
   return MyService;
 };

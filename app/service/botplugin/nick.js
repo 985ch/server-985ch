@@ -7,9 +7,9 @@ module.exports = app => {
   const db = app.qqDB;
   class MyService extends app.Service {
     // 处理消息
-    async onMessage({ selfid, user, isPrivate, history, group, cmd }, { raw_message }) {
+    async onMessage({ selfid, user, isPrivate, history, group, cmd }, messageChain) {
 
-      if (isPrivate) return null;
+      return null;
       // 判断是否询问群友
       const info = await this.checkAsk(raw_message, history);
       if (info) {

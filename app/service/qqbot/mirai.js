@@ -3,6 +3,7 @@
 
 module.exports = app => {
   const db = app.qqDB;
+  const botCfg = app.config.qqbot;
 
   class MyService extends app.Service {
     // 响应心跳事件，并同步拉取信息
@@ -100,6 +101,7 @@ module.exports = app => {
     }
     // 处理群消息
     async onGroupMessage({ sender, messageChain } = {}) {
+      messageChain.shift();
       const qqbot = this.service.qqbot;
       // 存储历史记录
       const history = await qqbot.group.saveHistory(sender.group.id, sender.id, messageChain);
@@ -114,7 +116,8 @@ module.exports = app => {
         const result = await cur.onMessage(msgInfo, messageChain);
         if (result) {
           const message = await this.reply(sender, result);
-          await qqbot.group.saveHistory(msgInfo.group.id, msgInfo.self, message);
+          await qqbot.group.saveHistory(msgInfo.group.id, botCfg.qq, message);
+          break;
         }
       }
     }
@@ -131,6 +134,7 @@ module.exports = app => {
         const result = await cur.onMessage(msgInfo, messageChain);
         if (result) {
           await this.reply(sender, result);
+          break;
         }
       }
     }
@@ -138,16 +142,67 @@ module.exports = app => {
     async reply(sender, { at_sender, reply } = {}) {
       const messageService = this.service.qqbot.message;
       const message = messageService.transMessage(reply);
-      let id = 0;
       if (sender.group) {
         if (at_sender)message.unshift({ type: 'At', target: sender.id, display: '' });
-        id = messageService.sendGroupMessage(sender, message);
+        await messageService.sendGroupMessage(sender, message);
       } else {
-        id = messageService.sendPrivateMessage(sender, message);
+        await messageService.sendPrivateMessage(sender, message);
       }
-      message.unshift({ type: 'Source', id, time: 0 }); // TODO:也许需要生成正确的时间戳
       return message;
     }
   }
   return MyService;
 };
+
+
+/*
+{
+  user: {
+    qq: '58636110',
+    nick: '自杀机器',
+    isAdmin: false,
+    isOwner: false,
+    roles: [ 'qqbot' ],
+    config: { groupid: 10696496 }
+  },
+  group: {
+    id: 10696496,
+    name: '静冈竞马场',
+    plugins: [ 'base', 'nick', 'responderCmd', 'responderReply' ],
+    config: {}
+  },
+  isPrivate: false,
+  plugins: [ 'base', 'nick', 'responderCmd', 'responderReply' ],
+  cmd: {}
+}
+{
+  userid: '58636110',
+  msg: [
+    { type: 'Source', id: 4769588, time: 1619075522 },
+    { type: 'Plain', text: '我忍住了没抽切噜' }
+  ],
+  t: 1619075522497
+}
+*/
+
+/*
+{
+  user: {
+    qq: '115839257',
+    nick: '985CH',
+    isAdmin: false,
+    isOwner: false,
+    roles: [ 'root', 'admin', 'qqbot', 'editor', 'adult', 'psi' ],
+    config: { groupid: 10696496 }
+  },
+  group: {
+    id: 10696496,
+    name: '静冈竞马场',
+    plugins: [ 'base', 'nick', 'responderCmd', 'responderReply' ],
+    config: {}
+  },
+  isPrivate: true,
+  plugins: [ 'base', 'nick', 'responderCmd', 'responderReply' ],
+  cmd: {}
+}
+*/
