@@ -21,6 +21,14 @@ module.exports = app => {
           return await this.login(user.qq);
         case 'bot在不在':
           return { reply: defaultResponds[Math.floor(Math.random() * defaultResponds.length)] };
+        case '命令':
+          if (user.roles.includes('admin')) {
+            const params = cmd.params;
+            const name = params.shift();
+            const reply = await this.service.rpc.mirai.sendCommand(name, params);
+            return { reply };
+          }
+          break;
         default:
           break;
       }

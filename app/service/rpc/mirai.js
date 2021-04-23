@@ -106,8 +106,23 @@ module.exports = app => {
     }
     // 获取群成员列表
     async memberList(groupid) {
-      const res = await this.requestMirai('GET', '/memberList', { target: groupid });
-      return res.data;
+      return await this.requestMirai('GET', '/memberList', { target: groupid });
+    }
+    // 发送指令
+    async sendCommand(name, args) {
+      const data = {
+        authKey: botCfg.authKey,
+        name: '/' + name,
+        args,
+      };
+
+      const res = await this.ctx.curl(botCfg.url + '/command/send', {
+        method: 'POST',
+        data: JSON.stringify(data),
+      });
+      if (res.status !== 200) throw new MiraiError(res.status, -1, '/command/send');
+
+      return res.data.toString();
     }
   }
   return MyService;

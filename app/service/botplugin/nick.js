@@ -5,19 +5,19 @@ const _ = require('lodash');
 
 module.exports = app => {
   const db = app.qqDB;
+  const botCfg = app.config.qqbot;
   class MyService extends app.Service {
     // 处理消息
-    async onMessage({ selfid, user, isPrivate, history, group, cmd }, messageChain) {
-
-      return null;
+    async onMessage({ user, isPrivate, history, group, cmd }, messageChain) {
+      if (isPrivate) return null;
       // 判断是否询问群友
-      const info = await this.checkAsk(raw_message, history);
+      const info = await this.checkAsk(messageChain, history);
       if (info) {
-        return await this.replyWho(group.id, selfid, user.qq, info);
+        return await this.replyWho(group.id, botCfg.qq, user.qq, info);
       }
       // 判断是否标记群友
       if (cmd.cmd === '设置昵称') {
-        return await this.setNick(user.qq, group.id, history, cmd.params[0], cmd.params[1]);
+        return await this.setNick(user.qq, group.id, messageChain, cmd);
       }
       return null;
     }
@@ -27,24 +27,51 @@ module.exports = app => {
     }
     // 检查是否在提问
     async checkAsk(msg, history) {
-      const last = msg.length;
+      if (msg.length === 2 && msg[0].type === 'At' && msg[1].type === 'Plain') {
+        if ([ '是谁', ' 是谁', '是谁？', ' 是谁？' ].includes(msg[1].text)) {
+          return { qq: msg[0].target };
+        }
+        return null;
+      } else if (msg.length !== 1 || msg[0].type !== 'Plain') {
+        return null;
+      }
+
+      const text = msg[0].text;
+      const last = text.length;
 
       let askType = 0;
       let who,
         nick;
-      if (_.startsWith(msg, '谁是')) {
+      if (_.startsWith(text, '谁是')) {
         askType = 1;
-        nick = msg.substring(2, last);
-        who = this.service.qqbot.groupmember.getPronous(nick, history);
+        nick = text.substring(2, last);
+        who = this.getPronous(nick, history);
         if (who) return who;
       }
-      if (_.endsWith(msg, '是谁')) {
+      if (_.endsWith(text, '是谁')) {
         askType = 2;
-        nick = msg.substring(0, last - 2);
-        who = this.service.qqbot.groupmember.getPronous(nick, history);
+        nick = text.substring(0, last - 2);
+        who = this.getPronous(nick, history);
         if (who) return who;
       }
       return (askType > 0) ? { nick } : null;
+    }
+    // 获取代词
+    getPronous(nick, history) {
+      switch (nick) {
+        case '我':
+          return { qq: history[0].userid };
+        case '你':
+        {
+          if (history.length > 1) {
+            return { qq: history[1].userid };
+          }
+          return { qq: botCfg.qq };
+        }
+        default:
+          break;
+      }
+      return { nick };
     }
     // 回答我不知道
     idontknow({ nick }) {
@@ -58,10 +85,11 @@ module.exports = app => {
       return await this.answerOne(groupid, me, asker, who, members);
     }
     // 查到单个成员，答复
-    async answerOne(groupid, me, asker, { nick }, { qq, card, nickname, title }) {
+    async answerOne(groupid, me, asker, { nick }, { id, memberName }) {
       // 统计用户的昵称标记
       const names = {};
       let claim = null;
+      const qq = id.toString();
       const list = await db.Groupnick.simpleFind({ groupid, qq });
       for (const cur of list) {
         if (names[cur.nick]) {
@@ -75,20 +103,20 @@ module.exports = app => {
       // 拼接返回文本
       if (!nick) {
         nick = await this.service.qqbot.groupmember.getNick(qq, groupid);
-        if (!nick)nick = card || title || nickname;
+        if (!nick)nick = memberName;
       }
 
       let target;
       let pron;
-      if (qq === me) {
+      if (id === me) {
         target = pron = '我';
       } else if (qq === asker) {
         target = pron = '你';
       } else {
-        target = card || title || nickname;
+        target = memberName;
         pron = '其';
       }
-      if (target === nick && Math.random() < 0.66)target = ((card !== target) ? card : null) || ((title !== target) ? title : null) || nickname;
+      if (target === nick && Math.random() < 0.66)target = memberName;
 
       let reply = Math.random() < 0.5 ? `${target}就是${nick}` : `${nick}就是${target}`;
       if (nick === claim) {
@@ -118,19 +146,16 @@ module.exports = app => {
       const gm = this.service.qqbot.groupmember;
       const list = [];
       for (const cur of members) {
-        const qq = cur.qq;
+        const qq = cur.id;
         let name;
         if (qq === me) {
           name = '我';
-        } else if (qq === asker) {
+        } else if (qq.toString() === asker) {
           name = '你';
         } else {
           let name = await gm.getNick(qq, groupid);
-          const { card, title, nickname } = cur;
-          if (!name)name = card || title || nickname;
-          if (name === who.nick) {
-            name = ((card !== name) ? card : null) || ((title !== name) ? title : null) || nickname;
-          }
+          const { memberName } = cur;
+          if (!name || name === who.nick)name = memberName;
         }
         list.push(name);
       }
@@ -162,13 +187,28 @@ module.exports = app => {
       return result.length > 0 ? result : null;
     }
     // 设置昵称
-    async setNick(uid, groupid, history, member, nick) {
+    async setNick(uid, groupid, msgs, cmd) {
       const gm = this.service.qqbot.groupmember;
-      let { qq } = gm.getPronous(member, history);
-      if (!qq) {
-        qq = await gm.find(groupid, member, true);
-        if (!qq) return { reply: `抱歉，我不知道${member}是谁`, at_sender: false };
+      let member = cmd.params[0];
+      let nick = cmd.params[1];
+      if (cmd.chainIndex !== 0) {
+        return { reply: '命令解析失败，请修正您的命令' };
       }
+      if (msgs.length > 1) {
+        if (msgs[1].type !== 'At') {
+          return { reply: '命令解析失败，请修正您的命令' };
+        }
+        member = msgs[1].target;
+        nick = cmd.params[0];
+        if (!nick) {
+          if (msgs.length < 3 || msgs[2].type !== 'Plain') {
+            return { reply: '命令解析失败，请修正您的命令' };
+          }
+          nick = _.trim(msgs[2].text);
+        }
+      }
+      const qq = await gm.find(groupid, member, true);
+      if (!qq) return { reply: '目标识别失败，无法设置昵称', at_sender: false };
       if (!nick || nick.length === 0) return { reply: '昵称不可为空', at_sender: false };
       if (nick.length > 20) return { reply: '昵称太长，无法记录', at_sender: false };
       // 避免昵称重复
