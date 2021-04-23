@@ -17,7 +17,7 @@ module.exports = app => {
       if (group) {
         return await this.service.rpc.mirai.sendTempMessage(group.id, id, message, quote);
       }
-      return await this.service.rpc.mirai.sendFriendMessage(group.id, id, message, quote);
+      return await this.service.rpc.mirai.sendFriendMessage(id, message, quote);
     }
   }
   return MyService;

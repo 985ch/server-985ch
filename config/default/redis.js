@@ -21,5 +21,8 @@ module.exports = {
     cachePub: {
       db: 1,
     },
+    locker: {
+      db: 1,
+    },
   },
 };

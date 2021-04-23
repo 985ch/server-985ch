@@ -52,8 +52,12 @@ module.exports = app => {
     }
     // 拉取最新获得的信息
     async fetchMessage(count = 99) {
-      const res = await this.requestMirai('GET', '/fetchMessage', { count });
-      return res.data;
+      let list = [];
+      app.redlock9.run('mirai-fetchMsg', 1000, async () => {
+        const res = await this.requestMirai('GET', '/fetchMessage', { count });
+        list = res.data;
+      });
+      return list;
     }
     // 发送同意或者拒绝入群邀请的应答
     async replyInvitedJoinGroup({ groupId, eventId, fromId } = {}, allow = false) {
