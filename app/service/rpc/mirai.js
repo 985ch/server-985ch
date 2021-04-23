@@ -53,7 +53,7 @@ module.exports = app => {
     // 拉取最新获得的信息
     async fetchMessage(count = 99) {
       let list = [];
-      app.redlock9.run('mirai-fetchMsg', 1000, async () => {
+      await app.redlock9.run('mirai-fetchMsg', 1000, async () => {
         const res = await this.requestMirai('GET', '/fetchMessage', { count });
         list = res.data;
       });

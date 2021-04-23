@@ -77,7 +77,7 @@ module.exports = app => {
       for (let i = 0; i < message.length; i++) {
         const cur = message[i];
         if (cur.type === 'Plain') {
-          textCount += cur.data.text.length;
+          textCount += cur.text.length;
         } else if (cur.type === 'Image') {
           picCount++;
         } else if (cur.type === 'Face' || cur.type === 'Emoji' || cur.type === 'At') {
