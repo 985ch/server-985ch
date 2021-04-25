@@ -9,7 +9,7 @@ module.exports = app => {
     async onMessage({ cmd, isPrivate, user, group }) {
       switch (cmd.cmd) {
         case 'roll':
-          return this.rollDice(user.qq, isPrivate ? null : group, cmd.params[0], cmd.params[1]);
+          return this.rollDice(user, isPrivate ? null : group, cmd.params[0], cmd.params[1]);
         default:
           break;
       }
@@ -20,7 +20,7 @@ module.exports = app => {
       return null;
     }
     // 生成登陆信息并返回
-    async rollDice(qq, group, action, rollInfo) {
+    async rollDice(user, group, action, rollInfo) {
       if (!rollInfo) {
         rollInfo = action;
         action = null;
@@ -35,6 +35,12 @@ module.exports = app => {
       if (!_.isNumber(count) || !_.isNumber(max)) {
         return { reply: '指令格式错误。正确格式：-roll [行为] (骰子数量)D(骰子面数)', at_sender: true };
       }
+      if (count < 1 || count > 10) {
+        return { reply: '骰子数量只能在1到10之间', at_sender: true };
+      }
+      if (max < 2 || max > 100) {
+        return { reply: '骰子面数只能在2到100之间', at_sender: true };
+      }
 
       let total = 0;
       const list = [];
@@ -46,7 +52,7 @@ module.exports = app => {
 
       let nick = '你';
       if (group && group.id > 0) {
-        nick = await this.service.qqbot.groupmember.getNick(qq, group.id);
+        nick = user.nick;
       }
       return { reply: `${nick} ${action ? '骰[' + action + ']' : '掷骰子'}(${rollInfo}):${list.join('+')}=${total}` };
     }
