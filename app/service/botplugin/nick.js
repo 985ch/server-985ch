@@ -189,6 +189,7 @@ module.exports = app => {
     // 设置昵称
     async setNick(uid, groupid, msgs, cmd) {
       const gm = this.service.qqbot.groupmember;
+      // 获取成员参数和昵称参数
       let member = cmd.params[0];
       let nick = cmd.params[1];
       if (cmd.chainIndex !== 0) {
@@ -207,6 +208,7 @@ module.exports = app => {
           nick = _.trim(msgs[2].text);
         }
       }
+      // 确认设置目标
       const qq = await gm.find(groupid, member, true);
       if (!qq) return { reply: '目标识别失败，无法设置昵称', at_sender: false };
       if (!nick || nick.length === 0) return { reply: '昵称不可为空', at_sender: false };

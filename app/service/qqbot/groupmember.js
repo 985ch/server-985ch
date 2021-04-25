@@ -7,6 +7,11 @@ module.exports = app => {
   const memory = app.cache9.get('mem');
   const db = app.qqDB;
   class MyService extends app.Service {
+    // 获取群名片
+    async getCard(qq, groupid) {
+      const members = await this.service.qqbot.group.getGroupMembers(groupid);
+      return members.qq[qq] && members.qq[qq].memberName;
+    }
     // 获取群昵称
     async getNick(qq, groupid) {
       if (!groupid) return null;
@@ -26,7 +31,7 @@ module.exports = app => {
     }
     // 获取群成员QQ号
     async find(groupid, nick, onlyOne = true) {
-      const { nickname } = await this.service.qqbot.group.getGroupMembers(groupid);
+      const { qq, nickname } = await this.service.qqbot.group.getGroupMembers(groupid);
       const foundMember = await memory.get(`gm-names:${groupid}:${nick}`, async () => {
         const found = await db.Groupnick.simpleFindOne({
           groupid,
@@ -41,10 +46,10 @@ module.exports = app => {
 
       let all;
       if (onlyOne) {
-        all = nickname[nick];
+        all = nickname[nick] || nickname[qq[nick]];
         return all ? all[0] : null;
       }
-      all = _.union(foundMember ? [ foundMember ] : [], nickname[nick]);
+      all = _.union(foundMember ? [ foundMember ] : [], (nickname[nick] || nickname[qq[nick]]));
       return all;
     }
     // 设置群友昵称
