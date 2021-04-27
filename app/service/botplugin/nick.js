@@ -108,7 +108,7 @@ module.exports = app => {
 
       let target;
       let pron;
-      if (id === me) {
+      if (qq === me) {
         target = pron = '我';
       } else if (qq === asker) {
         target = pron = '你';

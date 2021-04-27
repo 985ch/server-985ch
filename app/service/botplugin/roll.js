@@ -7,9 +7,13 @@ module.exports = app => {
   class MyService extends app.Service {
     // 处理消息
     async onMessage({ cmd, isPrivate, user, group }) {
+      const groupid = isPrivate ? 0 : group.id;
       switch (cmd.cmd) {
         case 'roll':
-          return this.rollDice(user, isPrivate ? null : group, cmd.params[0], cmd.params[1]);
+          return this.rollDice(user, groupid, cmd.params[0], cmd.params[1]);
+        case 'rd':
+        case 'ra':
+          return this.rollCheck(user, cmd.cmd, groupid, cmd.params[0], cmd.params[1]);
         default:
           break;
       }
@@ -19,43 +23,74 @@ module.exports = app => {
     async onBeat() {
       return null;
     }
-    // 生成登陆信息并返回
-    async rollDice(user, group, action, rollInfo) {
-      if (!rollInfo) {
-        rollInfo = action;
+    // 掷骰子
+    rollDice(user, groupid, action, diceText) {
+      if (!diceText) {
+        diceText = action;
         action = null;
       }
-      rollInfo = (rollInfo || '1d100').toLowerCase();
-      const arr1 = rollInfo.split('d');
-      if (arr1.length !== 2) {
-        return { reply: '指令格式错误。正确格式：-roll [行为] (骰子数量)D(骰子面数)', at_sender: true };
-      }
-      const count = Number.parseInt(arr1[0]);
-      const max = Number.parseInt(arr1[1]);
-      if (!_.isNumber(count) || !_.isNumber(max)) {
-        return { reply: '指令格式错误。正确格式：-roll [行为] (骰子数量)D(骰子面数)', at_sender: true };
-      }
-      if (count < 1 || count > 10) {
-        return { reply: '骰子数量只能在1到10之间', at_sender: true };
-      }
-      if (max < 2 || max > 100) {
-        return { reply: '骰子面数只能在2到100之间', at_sender: true };
-      }
+      diceText = (diceText || '1d100').toLowerCase();
+      const { value, numbers, fail } = this.runDiceText(diceText);
+      if (fail) return { reply: fail, at_sender: true };
 
-      let total = 0;
-      const list = [];
-      for (let i = 0; i < count; i++) {
-        const n = Math.ceil(Math.random() * max);
-        list.push(n);
-        total += n;
-      }
-
-      let nick = '你';
-      if (group && group.id > 0) {
-        nick = user.nick;
-      }
-      return { reply: `${nick} ${action ? '骰[' + action + ']' : '掷骰子'}(${rollInfo}):${list.join('+')}=${total}` };
+      const nick = (groupid > 0) ? user.nick : '你';
+      const text = numbers.length === 1 ? value.toString() : numbers.join('+') + '=' + value;
+      return { reply: `${nick} ${action ? '骰[' + action + ']' : '掷骰子'}(${diceText}):${text}` };
     }
+    // 拆解骰子指令并执行
+    runDiceText(text) {
+      const dices = text.toLowerCase().split('+');
+
+      let count = 0;
+      let value = 0;
+      const numbers = [];
+      for (let i = 0; i < dices.length; i++) {
+        const diceInfo = dices[i].split('d');
+        if (diceInfo.length === 1) {
+          const n = Number.parseInt(diceInfo[0]);
+          if (i === 0 || !_.isInteger(n)) return { fail: '无效的骰子格式' };
+          if (i !== dices.length - 1) return { fail: '固定数字必须放在最后' };
+          value += n;
+          numbers.push(n);
+        } else if (diceInfo.length === 2) {
+          const diceCount = Number.parseInt(diceInfo[0]);
+          const diceMax = Number.parseInt(diceInfo[1]);
+          if (!_.isInteger(diceCount) || !_.isInteger(diceMax)) return { fail: '无效的骰子格式' };
+          if (diceMax < 2 || diceMax > 100) return { fail: '骰子面数只能在2到100之间' };
+
+          count += diceCount;
+          if (count > 10) return { fail: '一次最多只能掷10个骰子' };
+
+          for (let j = 0; j < diceCount; j++) {
+            const n = Math.ceil(Math.random() * diceMax);
+            value += n;
+            numbers.push(n);
+          }
+        } else {
+          return { fail: '无效的骰子格式' };
+        }
+      }
+      return { value, numbers };
+    }
+    // 检定
+    rollCheck(user, type, groupid, action, pass) {
+      const max = (type === 'rd') ? 20 : 100;
+      if (!pass) {
+        pass = max / 2;
+      } else {
+        pass = Number.parseInt(pass);
+        if (!_.isInteger(pass) || pass < 1 || pass > max) return { reply: '无效的检定值' };
+      }
+      const n = Math.ceil(Math.random() * max);
+      const successText = (type === 'rd') ? this.getSuccessText(n === 1, n === 20, n >= pass) : this.getSuccessText(n === 100, n === 1, n <= pass);
+      const nick = (groupid > 0) ? user.nick : '你';
+      return { reply: `${nick} ${action ? '检定' + action : '掷检定'}(${n}/${max})${successText}` };
+    }
+    // 获取检定结果文本
+    getSuccessText(bigFail, bigSuccess, success) {
+      return bigFail ? '大失败' : bigSuccess ? '大成功' : success ? '成功' : '失败';
+    }
+
   }
   return MyService;
 };

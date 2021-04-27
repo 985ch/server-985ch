@@ -32,6 +32,7 @@ module.exports = app => {
     // 获取群成员QQ号
     async find(groupid, nick, onlyOne = true) {
       const { qq, nickname } = await this.service.qqbot.group.getGroupMembers(groupid);
+      const groupResult = qq[nick] ? nickname[qq[nick].memberName] : nickname[nick];
       const foundMember = await memory.get(`gm-names:${groupid}:${nick}`, async () => {
         const found = await db.Groupnick.simpleFindOne({
           groupid,
@@ -42,14 +43,14 @@ module.exports = app => {
         }, [ 'qq' ]);
         return found ? found.qq : null;
       }, { ttl: 300 });
-      if (foundMember && onlyOne) return foundMember;
+      if (foundMember && onlyOne) return _.map(foundMember, 'qq');
 
       let all;
       if (onlyOne) {
-        all = nickname[nick] || nickname[qq[nick]];
+        all = groupResult;
         return all ? all[0] : null;
       }
-      all = _.union(foundMember ? [ foundMember ] : [], (nickname[nick] || nickname[qq[nick]]));
+      all = _.union(foundMember ? [ foundMember ] : [], groupResult);
       return all;
     }
     // 设置群友昵称

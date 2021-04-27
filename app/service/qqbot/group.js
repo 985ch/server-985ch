@@ -10,6 +10,7 @@ module.exports = app => {
   const cache = app.cache9.get('main');
   const memory = app.cache9.get('mem');
   const db = app.qqDB;
+  const botCfg = app.config.qqbot;
   class MyService extends app.Service {
     // 获取群数据
     async getData(groupid, groupName) {
@@ -54,11 +55,14 @@ module.exports = app => {
     // 获取群成员列表
     async getGroupMembers(groupid, update = false) {
       return await memory.get(`g-members:${groupid}`, async () => {
-        const list = await this.service.rpc.mirai.memberList(groupid);
+        const mirai = this.service.rpc.mirai;
+        const list = await mirai.memberList(groupid);
+        const self = await mirai.memberInfo(groupid, botCfg.qq);
+        list.push({ id: Number.parseInt(botCfg.qq), memberName: self.nick || self.name });
         const qq = {};
         const nickname = {};
         for (const member of list) {
-          qq[member.id] = member;
+          qq[member.id] = { id: member.id, memberName: member.memberName };
           this.ctx.helper.pushToObj(nickname, [ member.memberName ], member.id);
         }
         return { qq, nickname };

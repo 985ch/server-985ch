@@ -108,6 +108,10 @@ module.exports = app => {
     async memberList(groupid) {
       return await this.requestMirai('GET', '/memberList', { target: groupid });
     }
+    // 获取群成员信息
+    async memberInfo(groupid, qq) {
+      return await this.requestMirai('GET', '/memberInfo', { target: groupid, memberid: qq });
+    }
     // 发送指令
     async sendCommand(name, args) {
       const data = {
