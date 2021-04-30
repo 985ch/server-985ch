@@ -28,9 +28,9 @@ module.exports = app => {
         case '设置菜单':
           return await this.setMenu(cmd.params, group.id, user.qq);
         case '移除标签':
-          return await this.removeLink(cmd.params, group.id, db.FoodMenutag, 'tid', db.FoodTags, 'tag');
+          return await this.removeLink(cmd.params, group.id, db.FoodMenutag, 'tid', 'FoodTags', 'tag');
         case '移除食材':
-          return await this.removeLink(cmd.params, group.id, db.FoodMenuing, 'iid', db.FoodIngredient, 'name');
+          return await this.removeLink(cmd.params, group.id, db.FoodMenuing, 'iid', 'FoodIngredient', 'name');
         case '查看菜单':
           return await this.getFoodInfo(cmd.params[0], group.id);
         case '菜单列表':
@@ -149,12 +149,12 @@ module.exports = app => {
       return await this.getFoodInfo(name, groupid, '已记录！\n');
     }
     // 移除标签或者食材对菜单的关联
-    async removeLink(params, groupid, asModel, asKey, dataModel, dataKey) {
+    async removeLink(params, groupid, asModel, asKey, dataTable, dataKey) {
       const name = params[0];
       if (!name) return { reply: '无效的菜单名称', at_sender: true };
       const found = await db.FoodMenu.simpleFindOne({ name, groupid: [ 0, groupid ], enable: 1 }, [ 'id', 'name' ]);
       if (!found) return { reply: `未找到菜单：${name}` };
-      const ids = await this.getIds(dataModel.tableName, dataKey, _.tail(params));
+      const ids = await this.getIds(dataTable, dataKey, _.tail(params));
       await asModel.destroy({ where: { mid: found.id, [asKey]: ids } });
       return await this.getFoodInfo(name, groupid, '已修改！\n');
     }
