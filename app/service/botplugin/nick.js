@@ -207,6 +207,9 @@ module.exports = app => {
           }
           nick = _.trim(msgs[2].text);
         }
+      } else if (!nick) {
+        nick = member;
+        member = uid;
       }
       // 确认设置目标
       const qq = await gm.find(groupid, member, true);
@@ -223,13 +226,13 @@ module.exports = app => {
       }, [ 'qq' ]);
       if (found) {
         const card = await gm.getCard(found.qq, groupid);
-        return { reply: `称号 ${nick} 已被群友 ${card} 占用`, at_sender: false };
+        return { reply: `称号${nick}已被群友${card}占用`, at_sender: false };
       }
       // 更新数据
       await gm.saveNick(uid, groupid, qq, nick);
 
       const card = await gm.getCard(qq, groupid);
-      return { reply: `收到，已将 ${card} 标记为 ${nick}`, at_sender: false };
+      return { reply: `收到，已将${card}标记为${nick}`, at_sender: false };
     }
   }
   return MyService;

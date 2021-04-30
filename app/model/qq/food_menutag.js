@@ -17,6 +17,16 @@ module.exports = app => {
 
   utils.extendModel(model);
   model.associate = function() {
+    app.qqDB.FoodMenutag.belongsTo(app.qqDB.FoodTags, {
+      foreignKey: 'tid',
+      targetKey: 'id',
+      as: 'food_tags',
+    });
+    app.qqDB.FoodMenutag.belongsTo(app.qqDB.FoodMenu, {
+      foreignKey: 'mid',
+      targetKey: 'id',
+      // as: 'food_menu',
+    });
   };
 
   return model;

@@ -14,6 +14,8 @@ module.exports = app => {
         case 'rd':
         case 'ra':
           return this.rollCheck(user, cmd.cmd, groupid, cmd.params[0], cmd.params[1]);
+        case '抉择':
+          return this.randomSelect(user, groupid, cmd.params);
         default:
           break;
       }
@@ -84,13 +86,20 @@ module.exports = app => {
       const n = Math.ceil(Math.random() * max);
       const successText = (type === 'rd') ? this.getSuccessText(n === 1, n === 20, n >= pass) : this.getSuccessText(n === 100, n === 1, n <= pass);
       const nick = (groupid > 0) ? user.nick : '你';
-      return { reply: `${nick} ${action ? '检定' + action : '掷检定'}(${n}/${max})${successText}` };
+      return { reply: `${nick} ${action ? '检定' + action : '掷检定'}:D${max}=${n}(${pass})${successText}` };
     }
     // 获取检定结果文本
     getSuccessText(bigFail, bigSuccess, success) {
       return bigFail ? '大失败' : bigSuccess ? '大成功' : success ? '成功' : '失败';
     }
-
+    // 随机选择
+    randomSelect(user, groupid, list) {
+      if (!list || list.length === 0) return { reply: '没有选项' };
+      if (list.length === 1) return { reply: '没有抉择的必要' };
+      const text = list[Math.floor(Math.random() * list.length)];
+      const nick = (groupid > 0) ? user.nick : '你';
+      return { reply: `建议${nick}选择${text}` };
+    }
   }
   return MyService;
 };

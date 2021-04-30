@@ -10,6 +10,7 @@ const defaultResponds = [
   '好像有点道理',
   '确实',
   '对啊，我也是这么想的',
+  '比起这个，现在是不是该发色图了？',
 ];
 
 module.exports = app => {
@@ -87,7 +88,7 @@ module.exports = app => {
         }
       }
       // 符合条件即复读
-      if (textCount < maxRepeatLength && (picCount === 0 || (picCount === 1 && textCount > 2))) {
+      if (textCount < maxRepeatLength && picCount <= 1) {
         return true;
       }
       return false;

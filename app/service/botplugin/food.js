@@ -24,17 +24,21 @@ module.exports = app => {
       if (isPrivate) return null;
       switch (cmd.cmd) {
         case '点餐':
-          return await this.randomMenu(cmd.params, group.id, user.nick);
+          return await this.randomMenu(cmd.params, group.id, user.nick, 1);
         case '设置菜单':
           return await this.setMenu(cmd.params, group.id, user.qq);
         case '移除标签':
-          return await this.removeTags(cmd.params, group.id);
+          return await this.removeLink(cmd.params, group.id, db.FoodMenutag, 'tid', db.FoodTags, 'tag');
         case '移除食材':
-          return await this.removeIngs(cmd.params, group.id);
+          return await this.removeLink(cmd.params, group.id, db.FoodMenuing, 'iid', db.FoodIngredient, 'name');
         case '查看菜单':
           return await this.getFoodInfo(cmd.params[0], group.id);
-        case '菜单查询':
-          break;
+        case '菜单列表':
+          return await this.randomMenu(cmd.params, group.id, user.nick, 10);
+        case '食材列表':
+          return await this.getList(group.id, db.FoodMenuing, db.FoodIngredient, 'name', '食材');
+        case '菜单标签列表':
+          return await this.getList(group.id, db.FoodMenutag, db.FoodTags, 'tag', '标签');
         default:
           break;
       }
@@ -47,44 +51,41 @@ module.exports = app => {
     // 帮助文本
     get helpText() { return helpReply; }
     // 随机点餐
-    async randomMenu(params, groupid, nick) {
+    async randomMenu(params, groupid, nick, limit) {
       // 获取查询条件
-      const { tags, ings, fail } = this.splitParams(params, true);
+      const { name, tags, ings, fail } = this.splitParams(params, false);
       if (fail) return { reply: fail, at_sender: true };
       if (tags.length + ings.length > 5) return { reply: '最多只支持5个筛选条件', at_sender: true };
       const ingIds = await this.getIds('FoodIngredient', 'name', ings);
       const tagIds = await this.getIds('FoodTags', 'tag', tags);
+      if (ingIds.length !== ings.length || tagIds.length !== tags.length) {
+        return { reply: '标签或食材中包含未知要素，无法找到对应菜单', at_sender: true };
+      }
 
       // 根据查询条件生成联查语句
       const include = [];
-      for (const tid of tagIds) {
+      for (let i = 0; i < tagIds.length; i++) {
+        const tid = tagIds[i];
         include.push({
           attributes: [],
           required: true,
           model: db.FoodMenutag,
           where: { tid, enable: 1 },
-          association: db.FoodMenu.belongsTo(db.FoodMenutag, {
-            targetKey: 'mid',
-            foreignKey: 'id',
-            as: 'menuTags' + tid,
-          }),
+          as: 'menuTags' + i,
         });
       }
-      for (const iid of ingIds) {
+      for (let i = 0; i < ingIds.length; i++) {
+        const iid = ingIds[i];
         include.push({
           attributes: [],
           required: true,
           model: db.FoodMenuing,
           where: { iid, enable: 1 },
-          association: db.FoodMenu.belongsTo(db.FoodMenuing, {
-            targetKey: 'mid',
-            foreignKey: 'id',
-            as: 'menuIngs' + iid,
-          }),
+          as: 'menuIngs' + i,
         });
       }
-      // 随机查询菜单
-      const found = await db.FoodMenu.findAll({
+      // 根据条件生成查询对象
+      const findJson = {
         attributes: [ 'name' ],
         include,
         where: {
@@ -92,16 +93,39 @@ module.exports = app => {
           enable: 1,
         },
         order: [ sequelize.fn('RAND') ],
-        limit: 1,
+        limit,
         raw: true,
-      });
+      };
+      if (name) {
+        findJson.where.name = { [sequelize.Op.like]: '%' + name + '%' };
+      }
+      const found = await db.FoodMenu.findAll(findJson);
 
-      if (found.length === 0) return { reply: '未找到任何菜单' };
-      return { reply: `${nick} 的点餐结果是：${found[0].name}` };
+      // 返回单个菜单
+      if (limit === 1) {
+        if (found.length === 0) return { reply: '未找到任何菜单' };
+        return { reply: `${nick}的点餐结果是：${found[0].name}` };
+      }
+
+      // 生成条件文本
+      let conText = name ? '名字包含“' + name + '”' : '';
+      conText += (tags.length > 0 ? (conText !== '' ? '，' : '') + '标签包含“' + tags.join('”，“') + '”' : '');
+      conText += (ings.length > 0 ? (conText !== '' ? '，并且' : '') + '使用了食材“' + ings.join('”，“') + '”' : '');
+      if (found.length === 0) {
+        return { reply: '没有找到' + conText + _.map(found, 'name').join('，') + '的菜单' };
+      }
+      conText += (conText !== '' ? '的菜单有：\n' : '目前共有菜单：\n');
+
+      // 批量返回菜单
+      if (found.length < limit) {
+        return { reply: conText + _.map(found, 'name').join('，') };
+      }
+      const count = await db.FoodMenu.count(findJson);
+      return { reply: conText + _.map(found, 'name').join('，') + (count > limit ? ' 等共' + count + '个' : '') };
     }
     // 设置菜单
     async setMenu(params, groupid, qq) {
-      const { name, tags, ings, fail } = this.splitParams(params);
+      const { name, tags, ings, fail } = this.splitParams(params, true);
       if (fail) return { reply: fail, at_sender: true };
 
       const ingIds = await this.getIds('FoodIngredient', 'name', ings, name => { return { name, creator: qq }; });
@@ -124,31 +148,26 @@ module.exports = app => {
       }
       return await this.getFoodInfo(name, groupid, '已记录！\n');
     }
-    // 移除标签
-    async removeTags(params, groupid) {
+    // 移除标签或者食材对菜单的关联
+    async removeLink(params, groupid, asModel, asKey, dataModel, dataKey) {
       const name = params[0];
       if (!name) return { reply: '无效的菜单名称', at_sender: true };
       const found = await db.FoodMenu.simpleFindOne({ name, groupid: [ 0, groupid ], enable: 1 }, [ 'id', 'name' ]);
       if (!found) return { reply: `未找到菜单：${name}` };
-      const ids = await this.getIds('FoodTags', 'tag', _.tail(params));
-      await db.FoodMenutag.update({ enable: 0 }, { where: { mid: found.id, tid: ids } });
-      return await this.getFoodInfo(name, groupid, '已修改！\n');
-    }
-    // 移除食材
-    async removeIngs(params, groupid) {
-      const name = params[0];
-      if (!name) return { reply: '无效的菜单名称', at_sender: true };
-      const found = await db.FoodMenu.simpleFindOne({ name, groupid: [ 0, groupid ], enable: 1 }, [ 'id', 'name' ]);
-      if (!found) return { reply: `未找到菜单：${name}` };
-      const ids = await this.getIds('FoodIngredient', 'name', _.tail(params));
-      await db.FoodMenuing.update({ enable: 0 }, { where: { mid: found.id, iid: ids } });
+      const ids = await this.getIds(dataModel.tableName, dataKey, _.tail(params));
+      await asModel.destroy({ where: { mid: found.id, [asKey]: ids } });
       return await this.getFoodInfo(name, groupid, '已修改！\n');
     }
     // 拆解参数
-    splitParams(list, skipName = false) {
-      const name = skipName ? '' : list[0];
-      const startIdx = skipName ? 0 : 1;
-      if (!skipName && (!name || regFlag.test(name))) {
+    splitParams(list, needName) {
+      let startIdx = 0;
+      let name = list[0] || null;
+      if (name && name[0] !== '-') {
+        startIdx = 1;
+      } else {
+        name = null;
+      }
+      if (needName && (!name || regFlag.test(name))) {
         return { fail: '非法的菜单名' };
       }
       let flag = '';
@@ -234,6 +253,31 @@ module.exports = app => {
       const ingText = ings.length > 0 ? _.map(ings, 'name').join(',') : '未知食材';
       const text = `菜单：${name}\n标签：${tagText}\n食材：${ingText}`;
       return { reply: pretext + text };
+    }
+    // 获取标签或者食材列表
+    async getList(groupid, asModel, dataModel, dataKey, replyKey) {
+      const data = await asModel.findAll({
+        attributes: [[ sequelize.literal(dataModel.tableName + '.' + dataKey), 'name' ]],
+        include: [{
+          attributes: [],
+          required: true,
+          model: dataModel,
+          as: dataModel.tableName,
+        }, {
+          attributes: [],
+          required: true,
+          model: db.FoodMenu,
+          where: { groupid: [ 0, groupid ] },
+        }],
+        group: dataModel.tableName + '.' + dataKey,
+        raw: true,
+      });
+      const count = data.length;
+      if (count <= 20) {
+        return { reply: `目前菜单中的${replyKey}有：${_.map(data, 'name').join('，')}` };
+      }
+      const samples = _.sampleSize(data, 20);
+      return { reply: `目前菜单中的${replyKey}有：${_.map(samples, 'name').join('，')}等共${count}个` };
     }
   }
   return MyService;

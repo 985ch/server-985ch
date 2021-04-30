@@ -28,6 +28,18 @@ module.exports = app => {
       foreignKey: 'id',
       targetKey: 'mid',
     });
+    for (let i = 0; i < 5; i++) {
+      app.qqDB.FoodMenu.belongsTo(app.qqDB.FoodMenutag, {
+        targetKey: 'mid',
+        foreignKey: 'id',
+        as: 'menuTags' + i,
+      });
+      app.qqDB.FoodMenu.belongsTo(app.qqDB.FoodMenuing, {
+        targetKey: 'mid',
+        foreignKey: 'id',
+        as: 'menuIngs' + i,
+      });
+    }
   };
 
   return model;
