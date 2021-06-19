@@ -4,14 +4,13 @@
 const _ = require('lodash');
 const { MiraiError } = require('../../../lib/errors');
 
-let sessionKey = null;
-
 module.exports = app => {
+  const cache = app.cache9.get('main');
   const botCfg = app.config.qqbot;
   class MyService extends app.Service {
     // 请求mirai服务器
     async requestMirai(method, api, params) {
-      await this.getSession();
+      const sessionKey = await this.getSession();
       const data = _.extend({ sessionKey }, params);
 
       const res = await this.ctx.curl(botCfg.url + api, {
@@ -22,7 +21,7 @@ module.exports = app => {
 
       const result = JSON.parse(res.data.toString());
       if (result.code === 3 || result.code === 4) {
-        sessionKey = null;
+        cache.clear('mirai:session');
         return await this.requestMirai(method, api, params);
       }
 
@@ -30,30 +29,34 @@ module.exports = app => {
     }
     // 认证并激活session
     async getSession() {
-      if (sessionKey) return;
-
-      const res = await this.ctx.curl(botCfg.url + '/auth', { method: 'POST', data: JSON.stringify({ authKey: botCfg.authKey }) });
-      if (res.status !== 200) throw new MiraiError(res.status, -1, '/auth');
-      const resData = JSON.parse(res.data.toString());
-      if (resData.code !== 0) throw new MiraiError(res.status, resData.code, '/auth');
-      const session = resData.session;
-      const res2 = await this.ctx.curl(botCfg.url + '/verify', {
-        method: 'POST',
-        data: JSON.stringify({
-          authKey: botCfg.authKey,
-          sessionKey: session,
-          qq: botCfg.qq,
-        }),
-      });
-      if (res2.status !== 200) throw new MiraiError(res2.status, -1, '/verify');
-      const resData2 = JSON.parse(res2.data.toString());
-      if (resData2.code !== 0) throw new MiraiError(res2.status, resData2.code, '/verify');
-      sessionKey = session;
+      return await cache.get('mirai:session', async () => {
+        const res = await this.ctx.curl(botCfg.url + '/auth', { method: 'POST', data: JSON.stringify({ authKey: botCfg.authKey }) });
+        if (res.status !== 200) throw new MiraiError(res.status, -1, '/auth');
+        const resData = JSON.parse(res.data.toString());
+        if (resData.code !== 0) throw new MiraiError(res.status, resData.code, '/auth');
+        const session = resData.session;
+        const res2 = await this.ctx.curl(botCfg.url + '/verify', {
+          method: 'POST',
+          data: JSON.stringify({
+            authKey: botCfg.authKey,
+            sessionKey: session,
+            qq: botCfg.qq,
+          }),
+        });
+        if (res2.status !== 200) throw new MiraiError(res2.status, -1, '/verify');
+        const resData2 = JSON.parse(res2.data.toString());
+        if (resData2.code !== 0) throw new MiraiError(res2.status, resData2.code, '/verify');
+        return session;
+      }, { ttl: 24 * 3600, autoRenew: true });
     }
     // 拉取最新获得的信息
     async fetchMessage(count = 99) {
-      const res = await this.requestMirai('GET', '/fetchMessage', { count });
-      return res.data;
+      let list = [];
+      await app.redlock9.run('mirai-fetchMsg', 1000, async () => {
+        const res = await this.requestMirai('GET', '/fetchMessage', { count });
+        list = res.data;
+      });
+      return list;
     }
     // 发送同意或者拒绝入群邀请的应答
     async replyInvitedJoinGroup({ groupId, eventId, fromId } = {}, allow = false) {
@@ -95,6 +98,35 @@ module.exports = app => {
       if (quote)data.quote = quote;
       const result = await this.requestMirai('POST', '/sendTempMessage', data);
       return result.messageId;
+    }
+    // 获取群列表
+    async groupList() {
+      const res = await this.requestMirai('GET', '/groupList');
+      return res.data;
+    }
+    // 获取群成员列表
+    async memberList(groupid) {
+      return await this.requestMirai('GET', '/memberList', { target: groupid });
+    }
+    // 获取群成员信息
+    async memberInfo(groupid, qq) {
+      return await this.requestMirai('GET', '/memberInfo', { target: groupid, memberid: qq });
+    }
+    // 发送指令
+    async sendCommand(name, args) {
+      const data = {
+        authKey: botCfg.authKey,
+        name: '/' + name,
+        args,
+      };
+
+      const res = await this.ctx.curl(botCfg.url + '/command/send', {
+        method: 'POST',
+        data: JSON.stringify(data),
+      });
+      if (res.status !== 200) throw new MiraiError(res.status, -1, '/command/send');
+
+      return res.data.toString();
     }
   }
   return MyService;

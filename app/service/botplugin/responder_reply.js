@@ -1,6 +1,8 @@
 // 复读机插件的回复组件
 'use strict';
 
+const _ = require('lodash');
+
 const maxRepeatLength = 100;
 const defaultResponds = [
   '原来如此，我明白了',
@@ -8,19 +10,21 @@ const defaultResponds = [
   '好像有点道理',
   '确实',
   '对啊，我也是这么想的',
+  '比起这个，现在是不是该发色图了？',
 ];
 
 module.exports = app => {
   const db = app.qqDB;
+  const botCfg = app.config.qqbot;
   class MyService extends app.Service {
     // 处理消息
-    async onMessage({ cmd, group, selfid, history, isPrivate }, { message }) {
+    async onMessage({ cmd, group, history, isPrivate }, message) {
       // 私聊和命令不参与复读
       if (isPrivate || !group.id || cmd.cmd) return null;
       const config = group.config;
       const repeater = config.repeater;
 
-      const repeatCount = this.getCount(history, selfid, repeater);
+      const repeatCount = this.getCount(history, botCfg.qq, repeater);
       if (repeatCount > 0) { // 跟风复读
         const chance = 1 - 3 / ((repeatCount + 1) * (repeatCount + 1));
         if (Math.random() < chance) {
@@ -30,7 +34,9 @@ module.exports = app => {
         if (this.checkRepeat(message) && Math.random() < repeater.repeat) {
           return { reply: message, at_sender: false };
         }
-        return await this.randomReply(group.id);
+        if (repeatCount === 0) {
+          return await this.randomReply(group.id);
+        }
       }
       return null;
     }
@@ -50,7 +56,7 @@ module.exports = app => {
         if (!repeatMsg) {
           repeatMsg = msg;
           members.push(userid);
-        } else if (msg === repeatMsg) {
+        } else if (_.isEqual(msg, repeatMsg)) {
           if (userid === selfid) return 0;
           if (members.indexOf(userid) < 0) {
             count++;
@@ -71,18 +77,18 @@ module.exports = app => {
       let picCount = 0;
       for (let i = 0; i < message.length; i++) {
         const cur = message[i];
-        if (cur.type === 'text') {
-          textCount += cur.data.text.length;
-        } else if (cur.type === 'image') {
+        if (cur.type === 'Plain') {
+          textCount += cur.text.length;
+        } else if (cur.type === 'Image') {
           picCount++;
-        } else if (cur.type === 'face' || cur.type === 'emoji' || cur.type === 'bface' || cur.type === 'sface') {
+        } else if (cur.type === 'Face' || cur.type === 'Emoji' || cur.type === 'At') {
           textCount += 1;
-        } else {
+        } else { // 不复读含有特殊内容的内容
           return false;
         }
       }
       // 符合条件即复读
-      if (textCount < maxRepeatLength && (picCount === 0 || (picCount === 1 && textCount > 2))) {
+      if (textCount < maxRepeatLength && picCount <= 1) {
         return true;
       }
       return false;

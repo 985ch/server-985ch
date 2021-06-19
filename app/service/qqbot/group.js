@@ -10,6 +10,7 @@ module.exports = app => {
   const cache = app.cache9.get('main');
   const memory = app.cache9.get('mem');
   const db = app.qqDB;
+  const botCfg = app.config.qqbot;
   class MyService extends app.Service {
     // 获取群数据
     async getData(groupid, groupName) {
@@ -34,7 +35,7 @@ module.exports = app => {
             active: 1,
           });
           dbData = db.Groups.filterAll(created.dataValues);
-        } else if (dbData.name !== groupName) {
+        } else if (groupName && dbData.name !== groupName) {
           await db.Groups.update({
             name: groupName,
             updatetime: Date.now(),
@@ -51,50 +52,27 @@ module.exports = app => {
       }, { ttl: 3600 });
       return data;
     }
-    // 获取用户所属群ID
-    async getUserGroup(qq, config) {
-      let groupid = config.groupid;
-      const success = await this.checkUserGroup(qq, groupid);
-      if (success) return groupid;
-      const groups = await this.getUserGroups(qq);
-      if (groups.length > 0) {
-        groupid = groups[0];
-        await this.service.user.data.setConfig(qq, config, 'groupid', groupid);
-        return groupid;
-      }
-      return 0;
-    }
     // 获取群成员列表
     async getGroupMembers(groupid, update = false) {
       return await memory.get(`g-members:${groupid}`, async () => {
-        const list = await this.service.rpc.qqbot.getGroupMemberList(groupid);
+        const mirai = this.service.rpc.mirai;
+        const list = await mirai.memberList(groupid);
+        const self = await mirai.memberInfo(groupid, botCfg.qq);
+        list.push({ id: Number.parseInt(botCfg.qq), memberName: self.nick || self.name });
         const qq = {};
         const nickname = {};
-        const card = {};
-        const title = {};
         for (const member of list) {
-          member.qq = member.user_id.toString();
-          qq[member.qq] = member;
-          this.ctx.helper.pushToObj(nickname, [ member.nickname ], member.qq);
-          const showname = member.card || member.nickname;
-          this.ctx.helper.pushToObj(card, [ showname ], member.qq);
-          if (member.title) {
-            this.ctx.helper.pushToObj(title, [ member.title ], member.qq);
-          }
+          qq[member.id] = { id: member.id, memberName: member.memberName };
+          this.ctx.helper.pushToObj(nickname, [ member.memberName ], member.id);
         }
-        return { qq, card, nickname, title };
+        return { qq, nickname };
       }, { ttl: 1800, update });
-    }
-    // 获取群成员
-    async getGroupMember(groupid, qq) {
-      const members = await this.getGroupMembers(groupid);
-      return members.qq[qq];
     }
     // 获取群列表
     async getGroupList() {
       return await memory.get('g-list', async () => {
-        const list = await this.service.rpc.qqbot.getGroupList();
-        return _.map(list, 'group_id');
+        const list = await this.service.rpc.mirai.groupList();
+        return _.map(list, 'id');
       }, { ttl: 300 });
     }
     // 获取所有包含用户的群
@@ -103,18 +81,9 @@ module.exports = app => {
       const result = [];
       for (const groupid of groups) {
         const members = await this.getGroupMembers(groupid);
-        if (members.qq.indexOf(qq))result.push(groupid);
+        if (members.qq[qq])result.push(groupid);
       }
       return result;
-    }
-    // 检查用户是否属于某个群
-    async checkUserGroup(qq, groupid) {
-      let members = await this.getGroupMembers(groupid);
-      if (members.qq.indexOf(qq) >= 0) {
-        return true;
-      }
-      members = await this.getGroupMembers(groupid, true);
-      return members.qq.indexOf(qq) >= 0;
     }
     // 修改群配置信息
     async setConfig(groupid, config) {

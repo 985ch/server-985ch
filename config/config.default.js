@@ -51,6 +51,9 @@ module.exports = appInfo => {
   // 缓存配置
   config.cache9 = require('./default/cache9');
 
+  // 分布式锁配置
+  config.redlock9 = require('./default/redlock9');
+
   // add your user config here
   const userConfig = {
     qqbot: require('./default/mirai'),

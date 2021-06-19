@@ -10,6 +10,7 @@ module.exports = {
   admin: env('QQBOT_MIRAI_ADMIN'),
   plugins: [
     'base',
+    'roll',
     'nick',
     'responderCmd',
     'responderReply',
