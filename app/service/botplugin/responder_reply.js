@@ -11,6 +11,7 @@ const defaultResponds = [
   '确实',
   '对啊，我也是这么想的',
   '比起这个，现在是不是该发色图了？',
+  '还在聊呢？聊了这么久该去提提肛了。',
 ];
 
 module.exports = app => {

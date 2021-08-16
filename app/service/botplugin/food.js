@@ -7,10 +7,12 @@ const helpReply = `点餐模块可以让bot帮你选择每日三餐甚至点心�
 *注意：bot的选择无关营养搭配和健康，完全随机！
 -点餐 【-标签 标签1..标签N】 【-食材 食材1..食材N】 随机选出一个菜单，可以通过tag选项和食材选项限制食材范围
 -设置菜单 【菜单名字】 【-标签 标签1..标签N】 【-食材 食材1..食材N】 添加新的菜单或者为已有的菜单追加标签和食材
--移除标签 【菜单名字】 【标签1】 【标签2】..【标签N】 移除菜单的指定标签
+-移除菜单标签 【菜单名字】 【标签1】 【标签2】..【标签N】 移除菜单的指定标签
 -移除食材 【菜单名字】 【食材1】 【食材2】..【食材N】 移除菜单的指定食材
 -查看菜单 【菜单名字】 返回菜单的标签和食材等信息
--菜单查询 【关键字】 模糊查找相关菜单，只返回前10个结果和结果数量`;
+-菜单列表 【关键字】 【-标签 标签1..标签N】 【-食材 食材1..食材N】 查找相关菜单，随机返回10个结果和结果数量
+-食材列表 列出随机20个结果和结果数量
+-菜单标签列表 列出随机20个菜单标签和标签数量`;
 
 const regFlag = new RegExp("[`~!@#$^&*()=|{}':;',\\[\\].<>《》/?~！@#￥……&*（）——|{}【】‘；：”“'。，、？ ]"); // 判断文本中是否包含特殊符号的正则表达式
 
@@ -27,7 +29,7 @@ module.exports = app => {
           return await this.randomMenu(cmd.params, group.id, user.nick, 1);
         case '设置菜单':
           return await this.setMenu(cmd.params, group.id, user.qq);
-        case '移除标签':
+        case '移除菜单标签':
           return await this.removeLink(cmd.params, group.id, db.FoodMenutag, 'tid', 'FoodTags', 'tag');
         case '移除食材':
           return await this.removeLink(cmd.params, group.id, db.FoodMenuing, 'iid', 'FoodIngredient', 'name');
