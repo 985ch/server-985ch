@@ -8,7 +8,7 @@ module.exports = app => {
   // 进销存日志
   const model = app.psiDB.define('logs', {
     id: { type: DataTypes.INTEGER(11), allowNull: false, primaryKey: true, autoIncrement: true },
-    type: { type: DataTypes.INTEGER(4), allowNull: false, defaultValue: '0' }, // 订单类型 0 进货 1 出货 2 充值 3 储值 4 其他支出 5 其他收入 
+    type: { type: DataTypes.INTEGER(4), allowNull: false, defaultValue: '0' }, // 订单类型 0 进货 1 出货 2 充值 3 储值 4 其他支出 5 其他收入
     memberid: { type: DataTypes.INTEGER(11), allowNull: false }, // 目标对象
     storeid: { type: DataTypes.INTEGER(11), allowNull: true, defaultValue: '1' }, // 相关仓库
     amount: { type: DataTypes.DECIMAL, allowNull: false, defaultValue: '0.00' }, // 金额
