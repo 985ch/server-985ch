@@ -53,35 +53,40 @@ module.exports = app => {
       if (!snDB[type]) return { fail: -3, msg: '无效的数据源' };
 
       // 获取数据
-      const res = await this.ctx.curl('https://saucenao.com/search.php', {
-        method: 'GET',
-        data: {
-          url,
-          output_type: 2,
-          api_key: apiKey,
-          db: snDB[type],
-          numres: 10,
-        },
-        dataType: 'json',
-      });
-      if (res.status === 429) return { fail: -2, msg: '单位时间调用次数已达上限!' };
-      if (res.status !== 200) return { fail: -1, msg: '调用查询接口失败！' };
+      try {
+        const res = await this.ctx.curl('https://saucenao.com/search.php', {
+          method: 'GET',
+          timeout: 60000,
+          data: {
+            url,
+            output_type: 2,
+            api_key: apiKey,
+            db: snDB[type],
+            numres: 10,
+          },
+          dataType: 'json',
+        });
+        if (res.status === 429) return { fail: -2, msg: '单位时间调用次数已达上限!' };
+        if (res.status !== 200) return { fail: -1, msg: '调用查询接口失败！' };
 
-      // 判断结果的有效性
-      const results = res.data.results;
-      let datas = [];
-      const { short_limit, long_limit } = res.data.header;
-      if (results) {
-        datas = _.filter(_.map(results, this.filterResult), o => o);
+        // 判断结果的有效性
+        const results = res.data.results;
+        let datas = [];
+        const { short_limit, long_limit } = res.data.header;
+        if (results) {
+          datas = _.filter(_.map(results, this.filterResult), o => o);
+        }
+        if (!results || datas.length === 0) return { fail: -2, msg: '没有找到靠谱的结果！' };
+
+        // 返回结果
+        return {
+          short_limit,
+          long_limit,
+          datas,
+        };
+      } catch (e) {
+        return { fail: -1, msg: '调用saucenao失败！' };
       }
-      if (!results || datas.length === 0) return { fail: -2, msg: '没有找到靠谱的结果！' };
-
-      // 返回结果
-      return {
-        short_limit,
-        long_limit,
-        datas,
-      };
     }
     // 处理结果数据，得到指定格式并返回
     async filterResult(data) {

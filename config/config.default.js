@@ -39,6 +39,19 @@ module.exports = appInfo => {
     },
   };
 
+  // 配置http请求
+  config.httpclient = {
+    request: {
+      timeout: 3000,
+    },
+    httpAgent: {
+      timeout: 60000,
+    },
+    httpsAgent: {
+      timeout: 60000,
+    },
+  };
+
   // add your middleware config here
   config.middleware = [];
 
