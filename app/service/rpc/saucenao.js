@@ -53,8 +53,9 @@ module.exports = app => {
       if (!snDB[type]) return { fail: -3, msg: '无效的数据源' };
 
       // 获取数据
+      let res = null;
       try {
-        const res = await this.ctx.curl('https://saucenao.com/search.php', {
+        res = await this.ctx.curl('https://saucenao.com/search.php', {
           method: 'GET',
           timeout: 60000,
           data: {
@@ -68,30 +69,30 @@ module.exports = app => {
         });
         if (res.status === 429) return { fail: -2, msg: '单位时间调用次数已达上限!' };
         if (res.status !== 200) return { fail: -1, msg: '调用查询接口失败！' };
-
-        // 判断结果的有效性
-        const results = res.data.results;
-        let datas = [];
-        const { short_limit, long_limit } = res.data.header;
-        if (results) {
-          let count = 0;
-          datas = _.filter(_.map(results, this.filterResult), o => {
-            if (count >= 3) return null;
-            count++;
-            return o;
-          });
-        }
-        if (!results || datas.length === 0) return { fail: -2, msg: '没有找到靠谱的结果！' };
-
-        // 返回结果
-        return {
-          short_limit,
-          long_limit,
-          datas,
-        };
       } catch (e) {
+        this.logger.error(e);
         return { fail: -1, msg: '调用saucenao失败！' };
       }
+      // 判断结果的有效性
+      const results = res.data.results;
+      let datas = [];
+      const { short_limit, long_limit } = res.data.header;
+      if (results) {
+        let count = 0;
+        datas = _.filter(_.map(results, this.filterResult), o => {
+          if (count >= 3) return null;
+          count++;
+          return o;
+        });
+      }
+      if (!results || datas.length === 0) return { fail: -2, msg: '没有找到靠谱的结果！' };
+
+      // 返回结果
+      return {
+        short_limit,
+        long_limit,
+        datas,
+      };
     }
     // 处理结果数据，得到指定格式并返回
     filterResult(data) {
