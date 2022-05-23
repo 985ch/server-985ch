@@ -74,7 +74,12 @@ module.exports = app => {
         let datas = [];
         const { short_limit, long_limit } = res.data.header;
         if (results) {
-          datas = _.filter(_.map(results, this.filterResult), o => o);
+          let count = 0;
+          datas = _.filter(_.map(results, this.filterResult), o => {
+            if (count >= 3) return null;
+            count++;
+            return o;
+          });
         }
         if (!results || datas.length === 0) return { fail: -2, msg: '没有找到靠谱的结果！' };
 
@@ -89,7 +94,7 @@ module.exports = app => {
       }
     }
     // 处理结果数据，得到指定格式并返回
-    async filterResult(data) {
+    filterResult(data) {
       const {
         header: {
           similarity, // 相似度

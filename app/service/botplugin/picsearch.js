@@ -28,7 +28,7 @@ module.exports = app => {
       if (results.fail) {
         return { quote: true, reply: results.msg };
       }
-      return { quote: true, reply: this.resultToMessage(dbName, results) };
+      return { quote: true, reply: this.resultToMessage(dbName, results.datas) };
     }
     // 获取引用及图片链接
     getMessageInfo(message) {
@@ -39,10 +39,10 @@ module.exports = app => {
       return null;
     }
     // 将查找结果拼接为字符串以返回
-    resultToMessage(dbName, results) {
+    resultToMessage(dbName, datas) {
       let text = `从${dbName.toLowerCase() === 'all' ? '全部数据库' : dbName}中搜索到的结果有:\n`;
-      for (let i = 0; i < results.length; i++) {
-        const { from, similarity, title, author, url } = results[i];
+      for (let i = 0; i < datas.length; i++) {
+        const { from, similarity, title, author, url } = datas[i];
         text += `\n${i + 1}\n 来源:${from} 相似度${similarity}\n`;
         if (title) text += `${title}${author ? ' [' + author + ']' : ''}\n`;
         text += url;
