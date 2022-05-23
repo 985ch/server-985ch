@@ -58,6 +58,7 @@ module.exports = appInfo => {
   const userConfig = {
     qqbot: require('./default/mirai'),
     webUrl: env('QQBOT_WEB_URL'),
+    saucenaoKey: env('SAUCENAO_API_KEY'),
   };
 
   return {

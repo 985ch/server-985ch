@@ -139,12 +139,12 @@ module.exports = app => {
       }
     }
     // 回复消息
-    async reply(sender, { at_sender, reply } = {}) {
+    async reply(sender, { quote, at_sender, reply } = {}) {
       const messageService = this.service.qqbot.message;
       const message = messageService.transMessage(reply);
       if (sender.group) {
         if (at_sender)message.unshift({ type: 'At', target: sender.id, display: '' });
-        await messageService.sendGroupMessage(sender, message);
+        await messageService.sendGroupMessage(sender, message, quote);
       } else {
         await messageService.sendPrivateMessage(sender, message);
       }
