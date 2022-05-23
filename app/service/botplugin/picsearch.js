@@ -22,22 +22,21 @@ module.exports = app => {
     // 从saucenao搜索图片
     async searchPic(dbName, message) {
       const info = this.getMessageInfo(message);
-      if (!info.imageId) return { at_sender: true, reply: '图呢，图在哪儿？' };
+      if (!info) return { quote: true, reply: '图呢，图在哪儿？' };
       dbName = dbName || 'all';
       const results = await this.service.rpc.saucenao.searchPicture(info.url, dbName.toLowerCase());
       if (results.fail) {
-        return { at_sender: true, reply: results.msg };
+        return { quote: true, reply: results.msg };
       }
-      return { quote: info.quote, reply: this.resultToMessage(dbName, results) };
+      return { quote: true, reply: this.resultToMessage(dbName, results) };
     }
     // 获取引用及图片链接
     getMessageInfo(message) {
-      const quote = message[0].id;
-      const pic = message[2];
+      const pic = message[1];
       if (pic && pic.type === 'Image') {
-        return { quote, imageId: pic.imageId, url: pic.url };
+        return { imageId: pic.imageId, url: pic.url };
       }
-      return { quote };
+      return null;
     }
     // 将查找结果拼接为字符串以返回
     resultToMessage(dbName, results) {

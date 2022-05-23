@@ -101,6 +101,7 @@ module.exports = app => {
     }
     // 处理群消息
     async onGroupMessage({ sender, messageChain } = {}) {
+      const quote = messageChain[0].id;
       messageChain.shift();
       const qqbot = this.service.qqbot;
       // 存储历史记录
@@ -115,7 +116,7 @@ module.exports = app => {
         if (!cur.onMessage) continue;
         const result = await cur.onMessage(msgInfo, messageChain);
         if (result) {
-          const message = await this.reply(sender, result);
+          const message = await this.reply(sender, quote, result);
           await qqbot.group.saveHistory(msgInfo.group.id, botCfg.qq, message);
           break;
         }
@@ -133,18 +134,18 @@ module.exports = app => {
         if (!cur.onMessage) continue;
         const result = await cur.onMessage(msgInfo, messageChain);
         if (result) {
-          await this.reply(sender, result);
+          await this.reply(sender, null, result);
           break;
         }
       }
     }
     // 回复消息
-    async reply(sender, { quote, at_sender, reply } = {}) {
+    async reply(sender, quoteId, { quote, at_sender, reply } = {}) {
       const messageService = this.service.qqbot.message;
       const message = messageService.transMessage(reply);
       if (sender.group) {
         if (at_sender)message.unshift({ type: 'At', target: sender.id, display: '' });
-        await messageService.sendGroupMessage(sender, message, quote);
+        await messageService.sendGroupMessage(sender, message, quote ? quoteId : undefined);
       } else {
         await messageService.sendPrivateMessage(sender, message);
       }
