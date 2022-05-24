@@ -1,4 +1,4 @@
-// 对接QQ机器人
+// 调用saucenao搜索图片
 'use strict';
 
 const _ = require('lodash');
@@ -110,6 +110,8 @@ module.exports = app => {
           source, // 来源
           author, // 作者
           artist, // 作者
+          material, // 作品
+          characters, // 角色
         },
       } = data;
       // 排除相似度太低的图片
@@ -130,6 +132,8 @@ module.exports = app => {
         title: titleName || null,
         author: author || artist || member_name || null,
       };
+      if (material && material !== '')result.material = material;
+      if (characters && characters !== '')result.characters = characters;
       return result;
     }
   }
