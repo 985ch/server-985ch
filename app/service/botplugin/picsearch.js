@@ -102,7 +102,7 @@ module.exports = app => {
         text += `\n${i + 1}:${title} (相似度${similarity})`;
         text += `\n第${episode}话${from} - ${to}`;
       }
-      text += `\n更多结果点击:\n本月剩余查询额度：${limit}`;
+      text += `\n更多结果点击:${traceUrl(url)}\n本月剩余查询额度：${limit}`;
       return text;
     }
   }

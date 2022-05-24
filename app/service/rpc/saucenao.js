@@ -68,7 +68,7 @@ module.exports = app => {
           dataType: 'json',
         });
         if (res.status === 429) return { fail: -2, msg: '单位时间调用次数已达上限!' };
-        if (res.status !== 200) return { fail: -1, msg: '调用查询接口失败！' };
+        if (res.status !== 200) return { fail: -1, msg: '调用查询接口失败：' + res.status };
       } catch (e) {
         this.logger.error(e);
         return { fail: -1, msg: '调用saucenao失败！' };

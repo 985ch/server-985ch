@@ -16,7 +16,7 @@ module.exports = app => {
         });
         if (res.status === 503) return { fail: -2, msg: '试图请求trace.moe被拒绝，可能查询次数已经超过每月限额!' };
         if (res.status === 429) return { fail: -2, msg: '单位时间调用次数已达上限!' };
-        if (res.status !== 200) return { fail: -1, msg: '调用查询接口失败！' };
+        if (res.status !== 200) return { fail: -1, msg: '调用查询接口失败：' + res.status };
         if (res.data.error !== '') return { fail: -1, msg: 'trace.moe返回错误消息：' + res.data.error };
       } catch (e) {
         this.logger.error(e);
@@ -59,8 +59,8 @@ module.exports = app => {
         const key = obj.anilist.id + obj.episode;
         if (!keys[key]) {
           const data = {
-            similarity: obj.similarity,
-            episode: obj.episode,
+            similarity: obj.similarity.toFixed(2),
+            episode: obj.episode || 1,
             from: this.getTimeText(obj.from),
             to: this.getTimeText(obj.to),
             title: this.getAniTitle(obj),
@@ -88,9 +88,9 @@ module.exports = app => {
     }
     // 从对象获取最合适的标题内容
     getAniTitle({ anilist, filename }) {
-      if (anilist) {
-        const { native, romaji, english } = anilist;
-        return native || romaji || english;
+      if (anilist.title) {
+        const { native, romaji, english } = anilist.title;
+        return native || romaji || english || anilist.synonyms[0] || filename;
       }
       return filename;
     }
