@@ -112,6 +112,8 @@ module.exports = app => {
           artist, // 作者
           material, // 作品
           characters, // 角色
+          part, // 第几话
+          est_time, // 动画时间
         },
       } = data;
       // 排除相似度太低的图片
@@ -120,7 +122,7 @@ module.exports = app => {
       let titleName = jp_name || eng_name || title;
       if (/(http|https):\/\/?/.test(source)) {
         url = source;
-      } else if (ext_urls.length > 0) {
+      } else if (ext_urls && ext_urls.length > 0) {
         url = ext_urls[0];
         titleName = titleName || source;
       }
@@ -132,8 +134,14 @@ module.exports = app => {
         title: titleName || null,
         author: author || artist || member_name || null,
       };
-      if (material && material !== '')result.material = material;
-      if (characters && characters !== '')result.characters = characters;
+      if (part && est_time) {
+        result.material = `${source} [${part}] ${est_time}`;
+      } else if (material && material !== '') {
+        result.material = material;
+      }
+      if (characters && characters !== '') {
+        result.characters = characters;
+      }
       return result;
     }
   }

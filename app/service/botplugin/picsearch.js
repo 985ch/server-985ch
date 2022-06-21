@@ -87,7 +87,7 @@ module.exports = app => {
         text += `\n${i + 1}\n 来源地址:${from} 相似度${similarity}\n`;
         if (title) text += `${title}${author ? ' [' + author + ']' : ''}\n`;
         if (material || characters) {
-          text += `${material ? `作品名称:${material} ` : ''}${characters ? '角色:' + characters : ''}\n`;
+          text += `${material ? `作品:${material} ` : ''}${characters ? '角色:' + characters : ''}\n`;
         }
         text += url;
       }
