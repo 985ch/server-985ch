@@ -91,7 +91,7 @@ module.exports = app => {
         }
         text += url;
       }
-      text += `${sauceUrl(url)}\n24小时内剩余查询次数：${limit}`;
+      text += `\n${sauceUrl(url)}\n24小时内剩余查询次数：${limit}`;
       return text;
     }
     // 将动画查找结果拼接为字符串返回

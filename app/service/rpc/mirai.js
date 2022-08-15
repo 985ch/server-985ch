@@ -30,22 +30,21 @@ module.exports = app => {
     // 认证并激活session
     async getSession() {
       return await cache.get('mirai:session', async () => {
-        const res = await this.ctx.curl(botCfg.url + '/auth', { method: 'POST', data: JSON.stringify({ authKey: botCfg.authKey }) });
-        if (res.status !== 200) throw new MiraiError(res.status, -1, '/auth');
+        const res = await this.ctx.curl(botCfg.url + '/verify', { method: 'POST', data: JSON.stringify({ verifyKey: botCfg.authKey }) });
+        if (res.status !== 200) throw new MiraiError(res.status, -1, '/verify');
         const resData = JSON.parse(res.data.toString());
-        if (resData.code !== 0) throw new MiraiError(res.status, resData.code, '/auth');
+        if (resData.code !== 0) throw new MiraiError(res.status, resData.code, '/verify');
         const session = resData.session;
-        const res2 = await this.ctx.curl(botCfg.url + '/verify', {
+        const res2 = await this.ctx.curl(botCfg.url + '/bind', {
           method: 'POST',
           data: JSON.stringify({
-            authKey: botCfg.authKey,
             sessionKey: session,
             qq: botCfg.qq,
           }),
         });
-        if (res2.status !== 200) throw new MiraiError(res2.status, -1, '/verify');
+        if (res2.status !== 200) throw new MiraiError(res2.status, -1, '/bind');
         const resData2 = JSON.parse(res2.data.toString());
-        if (resData2.code !== 0) throw new MiraiError(res2.status, resData2.code, '/verify');
+        if (resData2.code !== 0) throw new MiraiError(res2.status, resData2.code, '/bind');
         return session;
       }, { ttl: 24 * 3600, autoRenew: true });
     }
